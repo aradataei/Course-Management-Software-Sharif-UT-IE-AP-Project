@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.utils import timezone
-
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 # مدیریت سفارشی برای مدل کاربر
 class CustomUserManager(BaseUserManager):
@@ -50,7 +51,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 # 3. جدول Students
 class Student(models.Model):
-    student_id = models.AutoField(primary_key=True)
+    STUDENT_ID_MIN = 1000000000  # حداقل مقدار ده رقمی
+    STUDENT_ID_MAX = 9999999999  # حداکثر مقدار ده رقمی
+    student_id = models.BigIntegerField(
+        primary_key=True,
+        validators=[
+            MinValueValidator(STUDENT_ID_MIN),
+            MaxValueValidator(STUDENT_ID_MAX)
+        ],
+        unique=True,
+        editable=False
+    )
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -92,12 +103,11 @@ class Instructor(models.Model):
 class Classroom(models.Model):
     classroom_id = models.AutoField(primary_key=True)
     classroom_name = models.CharField(max_length=100)
-    capacity = models.IntegerField()
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='classrooms')
+    capacity = models.PositiveIntegerField()
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.classroom_name
-
 
 # 6. جدول Courses
 class Course(models.Model):
@@ -105,12 +115,15 @@ class Course(models.Model):
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
     credits = models.DecimalField(max_digits=4, decimal_places=2)
-    class_time = models.CharField(max_length=100)  # می‌توانید به TimeField تغییر دهید اگر لازم است
+    class_time = models.CharField(max_length=100)
     exam_time = models.DateTimeField()
-    capacity = models.IntegerField()
-    remaining_capacity = models.IntegerField()
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='courses')
-    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, related_name='courses')
+    capacity = models.PositiveIntegerField(null=True, blank=True)  # Initially null
+    remaining_capacity = models.PositiveIntegerField(null=True, blank=True, editable=False)  # Calculated field
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
+    prerequisites = models.ManyToManyField('self', symmetrical=False, related_name='prerequisites_set')
+    corequisites = models.ManyToManyField('self', symmetrical=False, related_name='corequisites_set')
+    classrooms = models.ManyToManyField(Classroom, through='CourseClassroom')
 
     prerequisites = models.ManyToManyField('self', through='Prerequisite',
                                            symmetrical=False, related_name='required_for')
@@ -118,6 +131,22 @@ class Course(models.Model):
                                           symmetrical=False, related_name='corequired_for')
     classrooms = models.ManyToManyField(Classroom, through='CourseClassroom', related_name='courses')
 
+    @property
+    def enrolled_count(self):
+        return self.enrollment_set.filter(status='enrolled').count()
+
+    @property
+    def dynamically_remaining_capacity(self):
+        if self.capacity is not None:
+            return self.capacity - self.enrolled_count
+        return None
+
+    @property
+    def remaining_capacity(self):
+        if self.capacity is not None:
+            return self.capacity - self.enrollment_set.filter(status='enrolled').count()
+        return None
+    
     def __str__(self):
         return f"{self.course_code} - {self.course_name}"
 
@@ -125,13 +154,23 @@ class Course(models.Model):
 # 8. جدول Enrollments
 class Enrollment(models.Model):
     enrollment_id = models.AutoField(primary_key=True)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='enrollments')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
-    enrollment_date = models.DateField(default=timezone.now)
-    status = models.CharField(max_length=50)  # به عنوان مثال: "Enrolled", "Waitlisted"
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    enrollment_date = models.DateField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=(
+        ('enrolled', 'Enrolled'),
+        ('dropped', 'Dropped'),
+        ('completed', 'Completed'),
+    ))
 
     class Meta:
         unique_together = ('student', 'course')
+
+    def save(self, *args, **kwargs):
+        if self.status == 'enrolled':
+            if self.course.remaining_capacity is not None and self.course.remaining_capacity <= 0:
+                raise ValidationError("Cannot enroll: course capacity has been reached.")
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.student} enrolled in {self.course}"
