@@ -51,8 +51,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 # 3. جدول Students
 class Student(models.Model):
-    STUDENT_ID_MIN = 1000000000  # حداقل مقدار ده رقمی
-    STUDENT_ID_MAX = 9999999999  # حداکثر مقدار ده رقمی
+    STUDENT_ID_MIN = 100000000  # حداقل مقدار ده رقمی
+    STUDENT_ID_MAX = 403999999  # حداکثر مقدار ده رقمی
     student_id = models.BigIntegerField(
         primary_key=True,
         validators=[
@@ -60,7 +60,7 @@ class Student(models.Model):
             MaxValueValidator(STUDENT_ID_MAX)
         ],
         unique=True,
-        editable=False
+        editable=True
     )
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
     first_name = models.CharField(max_length=100)
@@ -71,7 +71,6 @@ class Student(models.Model):
     major = models.CharField(max_length=100)
     year = models.IntegerField()
     max_units = models.DecimalField(max_digits=5, decimal_places=2)
-    student_number = models.CharField(max_length=20, unique=True)
     admission_year = models.IntegerField()
 
     def __str__(self):
@@ -115,10 +114,9 @@ class Course(models.Model):
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
     credits = models.DecimalField(max_digits=4, decimal_places=2)
-    class_time = models.CharField(max_length=100)
     exam_time = models.DateTimeField()
-    capacity = models.PositiveIntegerField(null=True, blank=True)  # Initially null
-    remaining_capacity = models.PositiveIntegerField(null=True, blank=True, editable=False)  # Calculated field
+    capacity = models.IntegerField(null=True, blank=True),
+    remaining_capacity = models.PositiveIntegerField(null=True, blank=True)  # Calculated field
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
     prerequisites = models.ManyToManyField('self', symmetrical=False, related_name='prerequisites_set')
@@ -131,22 +129,58 @@ class Course(models.Model):
                                           symmetrical=False, related_name='corequired_for')
     classrooms = models.ManyToManyField(Classroom, through='CourseClassroom', related_name='courses')
 
+    DAYS_OF_WEEK = [
+        ('Sat', 'شنبه'),
+        ('Sun', 'یکشنبه'),
+        ('Mon', 'دوشنبه'),
+        ('Tue', 'سه‌شنبه'),
+        ('Wed', 'چهارشنبه'),
+    ]
+    TIME_SLOTS = [
+        ('8:00-10:00', '8:00-10:00'),
+        ('10:00-12:00', '10:00-12:00'),
+        ('14:00-16:00', '14:00-16:00'),
+        ('16:00-18:00', '16:00-18:00'),
+    ]
+
+    class_date = models.CharField(
+        max_length=23,  # حداکثر طول برای دو روز جدا شده با کاما
+        help_text="یکی یا دو روز از شنبه تا چهارشنبه را انتخاب کنید. (مثال: Sat,Mon)",
+        verbose_name="روزهای برگزاری کلاس",
+        default="Sat"
+    )
+    
+    class_time = models.CharField(
+        max_length=11,
+        choices=TIME_SLOTS,
+        verbose_name="زمان برگزاری کلاس"
+    )
+
+    def clean(self):
+        # اعتبارسنجی روزهای انتخاب شده
+        if self.class_date:
+            # جدا کردن روزها بر اساس کاما و حذف فاصله‌های اضافی
+            dates = [day.strip() for day in self.class_date.split(',')]
+            # بررسی تعداد روزهای انتخاب شده
+            if not (1 <= len(dates) <= 2):
+                raise ValidationError("شما باید حداقل یکی و حداکثر دو روز را انتخاب کنید.")
+            # بررسی اعتبار هر روز انتخاب شده
+            valid_days = [day[0] for day in self.DAYS_OF_WEEK]
+            for day in dates:
+                if day not in valid_days:
+                    raise ValidationError(f"{day} یک روز معتبر نیست.")
+                
     @property
     def enrolled_count(self):
         return self.enrollment_set.filter(status='enrolled').count()
 
-    @property
-    def dynamically_remaining_capacity(self):
-        if self.capacity is not None:
-            return self.capacity - self.enrolled_count
-        return None
 
     @property
     def remaining_capacity(self):
-        if self.capacity is not None:
-            return self.capacity - self.enrollment_set.filter(status='enrolled').count()
-        return None
-    
+        enrolled_count = self.enrollment_set.filter(status='enrolled').count()
+        return self.capacity - 1
+
+
     def __str__(self):
         return f"{self.course_code} - {self.course_name}"
 
@@ -158,44 +192,23 @@ class Enrollment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     enrollment_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=(
-        ('enrolled', 'Enrolled'),
-        ('dropped', 'Dropped'),
-        ('completed', 'Completed'),
+        ('enrolled', 'در حال گذراندن'),
+        ('dropped', 'افتاده'),
+        ('withdrawed', 'حذف اضطراری'),      
+        ('completed', 'گذرانده'),
     ))
 
     class Meta:
         unique_together = ('student', 'course')
 
     def save(self, *args, **kwargs):
-        if self.status == 'enrolled':
-            if self.course.remaining_capacity is not None and self.course.remaining_capacity <= 0:
-                raise ValidationError("Cannot enroll: course capacity has been reached.")
-        super().save(*args, **kwargs)
-
+        if self.course.remaining_capacity > 0:
+            super().save(*args, **kwargs)
+        else:
+            raise ValueError("No remaining capacity for this course.")
+                
     def __str__(self):
-        return f"{self.student} enrolled in {self.course}"
-
-
-# 9. جدول WeeklySchedule
-class WeeklySchedule(models.Model):
-    schedule_id = models.AutoField(primary_key=True)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='weekly_schedules')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='weekly_schedules')
-    DAY_CHOICES = [
-        ('MON', 'Monday'),
-        ('TUE', 'Tuesday'),
-        ('WED', 'Wednesday'),
-        ('THU', 'Thursday'),
-        ('FRI', 'Friday'),
-        ('SAT', 'Saturday'),
-        ('SUN', 'Sunday'),
-    ]
-    day_of_week = models.CharField(max_length=3, choices=DAY_CHOICES)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-
-    def __str__(self):
-        return f"{self.course} on {self.get_day_of_week_display()} from {self.start_time} to {self.end_time}"
+        return f"{self.student} ثبت نام شد در {self.course}"
 
 
 # 10. جدول Prerequisites
@@ -208,7 +221,7 @@ class Prerequisite(models.Model):
         unique_together = ('course', 'required_course')
 
     def __str__(self):
-        return f"{self.required_course} is a prerequisite for {self.course}"
+        return f"درس {self.required_course} پیش نیاز {self.course} است"
 
 
 # 11. جدول CoRequisites
@@ -221,7 +234,7 @@ class CoRequisite(models.Model):
         unique_together = ('course', 'required_course')
 
     def __str__(self):
-        return f"{self.required_course} is a corequisite for {self.course}"
+        return f"{self.required_course} هم نیاز است با {self.course}"
 
 
 # 12. جدول CourseClassrooms
@@ -234,9 +247,7 @@ class CourseClassroom(models.Model):
         unique_together = ('course', 'classroom')
 
     def __str__(self):
-        return f"{self.course} is held in {self.classroom}"
+        return f"{self.course} برگزار میشود در کلاس {self.classroom}"
 
 
-# تنظیمات مدل کاربر سفارشی باید در settings.py به شکل زیر باشد:
-# AUTH_USER_MODEL = 'your_app_name.CustomUser'
 
