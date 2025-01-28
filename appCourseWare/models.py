@@ -7,23 +7,42 @@ from django.core.exceptions import ValidationError
 
 
 
+# Define a validator for 9-digit student IDs
+student_id_validator = RegexValidator(
+    regex=r'^\d{9}$',
+    message='Student ID must be a 9-digit number.'
+)
+
 class CustomUserManager(BaseUserManager):
-    def create_user(self, username, password=None, user_level=None, **extra_fields):
-        if not username:
-            raise ValueError('Users must have a username')
-        user = self.model(username=username, user_level=user_level, **extra_fields)
+    def create_user(self, student_id, password=None, **extra_fields):
+        """
+        Creates and saves a User with the given student_id and password.
+        """
+        if not student_id:
+            raise ValueError('The Student ID must be set')
+        if len(str(student_id)) != 9:
+            raise ValueError('Student ID must be a 9-digit number')
+        
+        student_id = int(student_id)
+        user = self.model(student_id=student_id, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, password, user_level=None, **extra_fields):
-        user = self.create_user(username, password, user_level, **extra_fields)
-        user.is_staff = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
+    def create_superuser(self, student_id, password=None, **extra_fields):
+        """
+        Creates and saves a superuser with the given student_id and password.
+        """
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
 
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
 
+        return self.create_user(student_id, password, **extra_fields)
 
 
 class UserLevel(models.Model):
@@ -35,22 +54,31 @@ class UserLevel(models.Model):
 
 
 
-
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    user_id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=150, unique=True)
-    user_level = models.ForeignKey(UserLevel, on_delete=models.CASCADE, related_name='users', null=True)
+    student_id = models.BigIntegerField(
+        primary_key=True,
+        unique=True,
+        validators=[student_id_validator],
+        verbose_name='Student ID'
+    )
+    user_level = models.ForeignKey('UserLevel', on_delete=models.CASCADE, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(default=timezone.now)
+    date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = []
+    USERNAME_FIELD = 'student_id'
+    REQUIRED_FIELDS = []  # Email is not required
 
     def __str__(self):
-        return self.username
+        return str(self.student_id)
+
+
+
+
+
+
 
 
 class Major(models.Model):
@@ -58,17 +86,6 @@ class Major(models.Model):
     major_name = models.CharField(max_length=15)
 
 class Student(models.Model):
-    STUDENT_ID_MIN = 100000000  # حداقل مقدار ده رقمی
-    STUDENT_ID_MAX = 403999999  # حداکثر مقدار ده رقمی
-    student_id = models.BigIntegerField(
-        primary_key=True,
-        validators=[
-            MinValueValidator(STUDENT_ID_MIN),
-            MaxValueValidator(STUDENT_ID_MAX)
-        ],
-        unique=True,
-        editable=True
-    )
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -145,7 +162,7 @@ class Student(models.Model):
                 raise ValidationError({'phone_number': 'شماره تلفن باید به فرم +98XXXXXXXXXX باشد.'})
     
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.student_id})"
+        return f"{self.first_name} {self.last_name}"
 
 
 
