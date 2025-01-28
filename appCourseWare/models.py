@@ -7,7 +7,6 @@ from django.core.exceptions import ValidationError
 
 
 
-# Define a validator for 9-digit student IDs
 student_id_validator = RegexValidator(
     regex=r'^\d{9}$',
     message='Student ID must be a 9-digit number.'
@@ -15,9 +14,6 @@ student_id_validator = RegexValidator(
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, student_id, password=None, **extra_fields):
-        """
-        Creates and saves a User with the given student_id and password.
-        """
         if not student_id:
             raise ValueError('The Student ID must be set')
         if len(str(student_id)) != 9:
@@ -30,9 +26,6 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, student_id, password=None, **extra_fields):
-        """
-        Creates and saves a superuser with the given student_id and password.
-        """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
@@ -45,12 +38,15 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(student_id, password, **extra_fields)
 
 
+
+
 class UserLevel(models.Model):
     user_level_id = models.AutoField(primary_key=True)
     user_level_name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.user_level_name
+
 
 
 
@@ -77,13 +73,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 
-
-
-
-
 class Major(models.Model):
     major_id = models.AutoField(primary_key=True)
     major_name = models.CharField(max_length=15)
+
+
+
 
 class Student(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
@@ -115,7 +110,6 @@ class Student(models.Model):
         ]
     )
     
-    # فیلد GPA
     gpa = models.DecimalField(
         max_digits=4,
         decimal_places=2,
@@ -126,18 +120,13 @@ class Student(models.Model):
         default=16.00
     )
     
-    # فیلد max_units که بر اساس GPA تعیین می‌شود
     max_units = models.PositiveIntegerField(default=0, editable=False)
     
-    # سایر فیلدهای مورد نیاز
     email = models.EmailField(unique=True)
     major = models.ForeignKey('Major', on_delete=models.CASCADE)  # فرض بر وجود مدل Major
     admission_year = models.PositiveIntegerField()
     
     def save(self, *args, **kwargs):
-        """
-        بازنویسی متد save برای تنظیم خودکار max_units بر اساس gpa
-        """
         if self.gpa < 14:
             self.max_units = 16
         elif 14 <= self.gpa < 17:
@@ -147,14 +136,8 @@ class Student(models.Model):
         super().save(*args, **kwargs)
     
     def clean(self):
-        """
-        متد clean برای اعتبارسنجی سفارشی
-        """
-        # بررسی national_id که باید دقیقا ۱۰ رقم باشد
         if not self.national_id.isdigit() or len(self.national_id) != 10:
             raise ValidationError({'national_id': 'کد ملی باید دقیقا ۱۰ رقم باشد.'})
-        
-        # بررسی phone_number به علاوه‌ی اینکه اگر وارد شده باشد
         if self.phone_number:
             import re
             pattern = r'^\+98\d{10}$'
