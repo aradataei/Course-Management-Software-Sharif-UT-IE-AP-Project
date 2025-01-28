@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserLevel, CustomUser, Student, Department, Instructor, Classroom, Course, Enrollment, Prerequisite, CoRequisite, CourseClassroom
+from .models import UserLevel, CustomUser, Student, Department, Instructor, Classroom, Course, Enrollment, Prerequisite, CoRequisite, Major
 
 admin.site.register(UserLevel)
 admin.site.register(CustomUser)
@@ -10,5 +10,5 @@ admin.site.register(Course)
 admin.site.register(Enrollment)
 admin.site.register(Prerequisite)
 admin.site.register(CoRequisite)
-admin.site.register(CourseClassroom)
 admin.site.register(Student)
+admin.site.register(Major)

@@ -1,10 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.utils import timezone
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 
-# مدیریت سفارشی برای مدل کاربر
+
+
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, username, password=None, user_level=None, **extra_fields):
         if not username:
@@ -22,7 +24,8 @@ class CustomUserManager(BaseUserManager):
         return user
 
 
-# 1. جدول UserLevels
+
+
 class UserLevel(models.Model):
     user_level_id = models.AutoField(primary_key=True)
     user_level_name = models.CharField(max_length=100)
@@ -31,7 +34,8 @@ class UserLevel(models.Model):
         return self.user_level_name
 
 
-# 2. جدول Users (مدل کاربر سفارشی)
+
+
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True)
@@ -49,7 +53,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 
-# 3. جدول Students
+class Major(models.Model):
+    major_id = models.AutoField(primary_key=True)
+    major_name = models.CharField(max_length=15)
+
 class Student(models.Model):
     STUDENT_ID_MIN = 100000000  # حداقل مقدار ده رقمی
     STUDENT_ID_MAX = 403999999  # حداکثر مقدار ده رقمی
@@ -65,19 +72,83 @@ class Student(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
+    
+    # فیلد national_id با اعتبارسنجی 10 رقمی
+    national_id = models.CharField(
+        max_length=10,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{10}$',
+                message='کد ملی باید دقیقا ۱۰ رقم باشد.'
+            )
+        ]
+    )
+    
+    # فیلد phone_number با اعتبارسنجی فرمت ایرانی
+    phone_number = models.CharField(
+        max_length=13,  # +98 و 10 رقم
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\+98\d{10}$',
+                message='شماره تلفن باید به فرم +98XXXXXXXXXX باشد.'
+            )
+        ]
+    )
+    
+    # فیلد GPA
+    gpa = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(0.0),
+            MaxValueValidator(20.0)
+        ],
+        default=16.00
+    )
+    
+    # فیلد max_units که بر اساس GPA تعیین می‌شود
+    max_units = models.PositiveIntegerField(default=0, editable=False)
+    
+    # سایر فیلدهای مورد نیاز
     email = models.EmailField(unique=True)
-    national_id = models.CharField(max_length=20, unique=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    major = models.CharField(max_length=100)
-    year = models.IntegerField()
-    max_units = models.DecimalField(max_digits=5, decimal_places=2)
-    admission_year = models.IntegerField()
-
+    major = models.ForeignKey('Major', on_delete=models.CASCADE)  # فرض بر وجود مدل Major
+    admission_year = models.PositiveIntegerField()
+    
+    def save(self, *args, **kwargs):
+        """
+        بازنویسی متد save برای تنظیم خودکار max_units بر اساس gpa
+        """
+        if self.gpa < 14:
+            self.max_units = 16
+        elif 14 <= self.gpa < 17:
+            self.max_units = 20
+        else:  # gpa >= 17
+            self.max_units = 24
+        super().save(*args, **kwargs)
+    
+    def clean(self):
+        """
+        متد clean برای اعتبارسنجی سفارشی
+        """
+        # بررسی national_id که باید دقیقا ۱۰ رقم باشد
+        if not self.national_id.isdigit() or len(self.national_id) != 10:
+            raise ValidationError({'national_id': 'کد ملی باید دقیقا ۱۰ رقم باشد.'})
+        
+        # بررسی phone_number به علاوه‌ی اینکه اگر وارد شده باشد
+        if self.phone_number:
+            import re
+            pattern = r'^\+98\d{10}$'
+            if not re.match(pattern, self.phone_number):
+                raise ValidationError({'phone_number': 'شماره تلفن باید به فرم +98XXXXXXXXXX باشد.'})
+    
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name} ({self.student_id})"
 
 
-# 4. جدول Departments
+
 class Department(models.Model):
     department_id = models.AutoField(primary_key=True)
     department_name = models.CharField(max_length=100)
@@ -86,7 +157,8 @@ class Department(models.Model):
         return self.department_name
 
 
-# 5. جدول Instructors
+
+
 class Instructor(models.Model):
     instructor_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
@@ -98,7 +170,8 @@ class Instructor(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 
-# 7. جدول Classrooms
+
+
 class Classroom(models.Model):
     classroom_id = models.AutoField(primary_key=True)
     classroom_name = models.CharField(max_length=100)
@@ -108,26 +181,20 @@ class Classroom(models.Model):
     def __str__(self):
         return self.classroom_name
 
-# 6. جدول Courses
+
+
+
 class Course(models.Model):
     course_id = models.AutoField(primary_key=True)
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
-    credits = models.DecimalField(max_digits=4, decimal_places=2)
     exam_time = models.DateTimeField()
     capacity = models.IntegerField(null=True, blank=True),
-    remaining_capacity = models.PositiveIntegerField(null=True, blank=True)  # Calculated field
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
-    prerequisites = models.ManyToManyField('self', symmetrical=False, related_name='prerequisites_set')
-    corequisites = models.ManyToManyField('self', symmetrical=False, related_name='corequisites_set')
-    classrooms = models.ManyToManyField(Classroom, through='CourseClassroom')
-
-    prerequisites = models.ManyToManyField('self', through='Prerequisite',
-                                           symmetrical=False, related_name='required_for')
-    corequisites = models.ManyToManyField('self', through='CoRequisite',
-                                          symmetrical=False, related_name='corequired_for')
-    classrooms = models.ManyToManyField(Classroom, through='CourseClassroom', related_name='courses')
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
+    prerequisites = models.ManyToManyField('self', through='Prerequisite', symmetrical=False, related_name='required_for')
+    corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
 
     DAYS_OF_WEEK = [
         ('Sat', 'شنبه'),
@@ -149,7 +216,6 @@ class Course(models.Model):
         verbose_name="روزهای برگزاری کلاس",
         default="Sat"
     )
-    
     class_time = models.CharField(
         max_length=11,
         choices=TIME_SLOTS,
@@ -169,23 +235,19 @@ class Course(models.Model):
             for day in dates:
                 if day not in valid_days:
                     raise ValidationError(f"{day} یک روز معتبر نیست.")
-                
-    @property
-    def enrolled_count(self):
-        return self.enrollment_set.filter(status='enrolled').count()
 
-
-    @property
-    def remaining_capacity(self):
-        enrolled_count = self.enrollment_set.filter(status='enrolled').count()
-        return self.capacity - 1
-
+    def save(self, *args, **kwargs):
+        if self.classroom:
+            self.capacity = self.classroom.capacity
+        super().save(*args, **kwargs)
+       
 
     def __str__(self):
         return f"{self.course_code} - {self.course_name}"
 
 
-# 8. جدول Enrollments
+
+
 class Enrollment(models.Model):
     enrollment_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -200,18 +262,13 @@ class Enrollment(models.Model):
 
     class Meta:
         unique_together = ('student', 'course')
-
-    def save(self, *args, **kwargs):
-        if self.course.remaining_capacity > 0:
-            super().save(*args, **kwargs)
-        else:
-            raise ValueError("No remaining capacity for this course.")
                 
     def __str__(self):
         return f"{self.student} ثبت نام شد در {self.course}"
 
 
-# 10. جدول Prerequisites
+
+
 class Prerequisite(models.Model):
     prerequisite_id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='prerequisites_set')
@@ -224,7 +281,8 @@ class Prerequisite(models.Model):
         return f"درس {self.required_course} پیش نیاز {self.course} است"
 
 
-# 11. جدول CoRequisites
+
+
 class CoRequisite(models.Model):
     corequisite_id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='corequisites_set')
@@ -236,18 +294,6 @@ class CoRequisite(models.Model):
     def __str__(self):
         return f"{self.required_course} هم نیاز است با {self.course}"
 
-
-# 12. جدول CourseClassrooms
-class CourseClassroom(models.Model):
-    course_classroom_id = models.AutoField(primary_key=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_classrooms')
-    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name='course_classrooms')
-
-    class Meta:
-        unique_together = ('course', 'classroom')
-
-    def __str__(self):
-        return f"{self.course} برگزار میشود در کلاس {self.classroom}"
 
 
 
