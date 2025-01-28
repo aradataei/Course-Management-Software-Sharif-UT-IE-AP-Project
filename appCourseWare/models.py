@@ -11,7 +11,6 @@ student_id_validator = RegexValidator(
     regex=r'^\d{9}$',
     message='Student ID must be a 9-digit number.'
 )
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, student_id, password=None, **extra_fields):
         if not student_id:
@@ -75,7 +74,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 class Major(models.Model):
     major_id = models.AutoField(primary_key=True)
-    major_name = models.CharField(max_length=15)
+    major_name = models.CharField(max_length=30)
 
 
 
@@ -175,12 +174,10 @@ class Instructor(models.Model):
 class Classroom(models.Model):
     classroom_id = models.AutoField(primary_key=True)
     classroom_name = models.CharField(max_length=100)
-    capacity = models.PositiveIntegerField()
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.classroom_name
-
 
 
 
@@ -189,7 +186,8 @@ class Course(models.Model):
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
     exam_time = models.DateTimeField()
-    capacity = models.IntegerField(null=True, blank=True),
+    capacity = models.PositiveIntegerField(default=10)  # ظرفیت اولیه
+    remaining_capacity = models.PositiveIntegerField(default=0)  # ظرفیت باقی‌مانده
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
@@ -211,7 +209,7 @@ class Course(models.Model):
     ]
 
     class_date = models.CharField(
-        max_length=23,  # حداکثر طول برای دو روز جدا شده با کاما
+        max_length=23,
         help_text="یکی یا دو روز از شنبه تا چهارشنبه را انتخاب کنید. (مثال: Sat,Mon)",
         verbose_name="روزهای برگزاری کلاس",
         default="Sat"
@@ -221,6 +219,12 @@ class Course(models.Model):
         choices=TIME_SLOTS,
         verbose_name="زمان برگزاری کلاس"
     )
+
+    def save(self, *args, **kwargs):
+        # اگر دوره جدید است، remaining_capacity را برابر با capacity قرار بده
+        if not self.pk:
+            self.remaining_capacity = self.capacity
+        super().save(*args, **kwargs)
 
     def clean(self):
         # اعتبارسنجی روزهای انتخاب شده
@@ -235,37 +239,50 @@ class Course(models.Model):
             for day in dates:
                 if day not in valid_days:
                     raise ValidationError(f"{day} یک روز معتبر نیست.")
-
-    def save(self, *args, **kwargs):
-        if self.classroom:
-            self.capacity = self.classroom.capacity
-        super().save(*args, **kwargs)
        
 
     def __str__(self):
-        return f"{self.course_code} - {self.course_name}"
+        return self.course_name
 
 
 
 
-class Enrollment(models.Model):
+class StudentCourse(models.Model):
     enrollment_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     enrollment_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=(
-        ('enrolled', 'در حال گذراندن'),
-        ('dropped', 'افتاده'),
-        ('withdrawed', 'حذف اضطراری'),      
-        ('completed', 'گذرانده'),
+        ('enrolled', 'در حال گذراندن'),  # "در حال گذراندن"
+        ('dropped', 'افتاده'),           # "افتاده"
+        ('withdrawn', 'حذف اضطراری'),    # "حذف اضطراری"
+        ('completed', 'گذرانده'),        # "گذرانده"
     ))
 
     class Meta:
         unique_together = ('student', 'course')
-                
+
+    def clean(self):
+        if self.course.remaining_capacity <= 0 and self.status == 'enrolled':
+            raise ValidationError('ظرفیت دوره به حداکثر رسیده است.')
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new and self.status == 'enrolled':
+            if self.course.remaining_capacity <= 0:
+                raise ValidationError('ظرفیت دوره کامل شده است.')
+            self.course.remaining_capacity -= 1
+            self.course.save()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.status == 'enrolled':
+            self.course.remaining_capacity += 1
+            self.course.save()
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return f"{self.student} ثبت نام شد در {self.course}"
-
 
 
 
