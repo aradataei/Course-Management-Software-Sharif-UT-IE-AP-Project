@@ -14,39 +14,31 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.username = form.cleaned_data['student_id']
-            
-            # ذخیره اطلاعات اضافی اگر وجود داشته باشد
-            if 'email' in request.POST:
-                user.email = request.POST['email']
-            if 'first_name' in request.POST:
-                user.first_name = request.POST['first_name']
-            if 'last_name' in request.POST:
-                user.last_name = request.POST['last_name']
-            
-            user.save()
-            
-            # ایجاد پروفایل دانشجویی
-            Student.objects.create(user=user)
-            
+            user = form.save()
             login(request, user)
-            return redirect('complete-profile')
+            # به جای ایجاد مستقیم Student، کاربر را به صفحه ایجاد Student هدایت می‌کنیم
+            return redirect('create_student_profile')
     else:
         form = CustomUserCreationForm()
-    
     return render(request, 'accounts/register.html', {'form': form})
 
-class CompleteProfileView(UpdateView):
-    model = Student
-    form_class = StudentProfileForm
-    template_name = 'accounts/complete_profile.html'
-    success_url = '/dashboard/'
+# تابع جدید برای ایجاد پروفایل Student
+def create_student_profile(request):
+    # اگر کاربر قبلاً Student داشته باشد، به صفحه اصلی هدایت می‌شود
+    if hasattr(request.user, 'student'):
+        return redirect('home')
+        
+    if request.method == 'POST':
+        form = StudentProfileForm(request.POST)
+        if form.is_valid():
+            student = form.save(commit=False)
+            student.user = request.user
+            student.save()
+            return redirect('home')
+    else:
+        form = StudentProfileForm()
     
-    def get_object(self):
-        return self.request.user.student
-    
-
+    return render(request, 'accounts/create_student_profile.html', {'form': form})
 from django.contrib.auth.views import LoginView
 
 class CustomLoginView(LoginView):

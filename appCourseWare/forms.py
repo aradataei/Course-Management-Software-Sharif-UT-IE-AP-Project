@@ -25,3 +25,4 @@ class StudentProfileForm(forms.ModelForm):
             'military_status': 'وضعیت نظام وظیفه',
             'marital_status': 'وضعیت تاهل'
         }
+

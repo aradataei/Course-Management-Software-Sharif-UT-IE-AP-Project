@@ -82,8 +82,8 @@ class Major(models.Model):
 
 class Student(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
-    first_name = models.CharField(max_length=100, null=True)
-    last_name = models.CharField(max_length=100, null=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     
     # فیلد national_id با اعتبارسنجی 10 رقمی
     national_id = models.CharField(
@@ -117,14 +117,20 @@ class Student(models.Model):
             MinValueValidator(0.0),
             MaxValueValidator(20.0)
         ],
-        default=16.00
     )
     
     max_units = models.PositiveIntegerField(default=0, editable=False)
     
     email = models.EmailField(unique=True)
     major = models.ForeignKey('Major', on_delete=models.CASCADE, null=True)  # فرض بر وجود مدل Major
-    admission_year = models.PositiveIntegerField(null=True)
+    admission_year = models.PositiveIntegerField(default=1403, choices={
+        '1403': 1403,
+        '1402': 1402,
+        '1401': 1401,
+        '1400': 1400,
+        '1399': 1399,
+        '1398': 1388,
+    })
     
     def save(self, *args, **kwargs):
         if self.gpa < 14:
