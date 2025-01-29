@@ -70,6 +70,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'CourseWare.wsgi.application'
 
+GRAPH_MODELS = {
+  'all_applications': True,
+  'group_models': True,
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
