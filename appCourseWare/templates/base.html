@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Website</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="navbar__menu">
+
+            {% if user.is_authenticated %}
+                <li class="navbar__item">
+                    <form action="{% url 'logout' %}" method="post" class="navbar__form">
+                        {% csrf_token %}
+                        <button type="submit" class="navbar__button">Logout</button>
+                    </form>
+                </li>
+            {% else %}
+                <li class="navbar__item"><a href="{% url 'login' %}" class="navbar__link">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>All rights reserved, MohammadMahdi Hashemi 402111475</p>
+    </footer>
+
+    <script src="{% static 'js/scripts.js' %}"></script>
+</body>
+<link rel="stylesheet" href="{% static 'css/styles.css' %}"> 
+
+</html>
