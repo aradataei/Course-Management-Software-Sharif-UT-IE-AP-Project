@@ -122,7 +122,7 @@ class Student(models.Model):
     max_units = models.PositiveIntegerField(default=0, editable=False)
     
     email = models.EmailField(unique=True)
-    major = models.ForeignKey('Major', on_delete=models.CASCADE, null=True)  # فرض بر وجود مدل Major
+    major = models.ForeignKey('Major', on_delete=models.SET_NULL, null=True)  # فرض بر وجود مدل Major
     admission_year = models.PositiveIntegerField(default=1403, choices={
         '1403': 1403,
         '1402': 1402,
@@ -260,8 +260,8 @@ class StudentCourse(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     enrollment_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=(
-        ('enrolled', 'در حال گذراندن'),  # "در حال گذراندن"
-        ('dropped', 'افتاده'),           # "افتاده"
+        ('enrolled', 'ثبت نام شده'),  # "در حال گذراندن"
+        ('pending', 'انتظار'),           # "افتاده"
         ('withdrawn', 'حذف اضطراری'),    # "حذف اضطراری"
         ('completed', 'گذرانده'),        # "گذرانده"
     ))
