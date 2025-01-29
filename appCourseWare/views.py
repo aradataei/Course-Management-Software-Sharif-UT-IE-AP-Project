@@ -50,3 +50,5 @@ class CustomLoginView(LoginView):
         if not remember_me:
             self.request.session.set_expiry(0)
         return super().form_valid(form)
+    
+
