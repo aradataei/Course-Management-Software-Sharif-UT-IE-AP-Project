@@ -1,8 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
-from django.views.generic import CreateView, UpdateView
 from .forms import CustomUserCreationForm, StudentProfileForm
-from .models import Student, CustomUser
 from django.contrib.auth.views import LogoutView, LoginView
 
 
@@ -39,7 +37,6 @@ def create_student_profile(request):
         form = StudentProfileForm()
     
     return render(request, 'accounts/create_student_profile.html', {'form': form})
-from django.contrib.auth.views import LoginView
 
 class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'

@@ -165,7 +165,7 @@ class Department(models.Model):
 
 
 
-class Instructor(models.Model):
+class Professor(models.Model):
     instructor_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -196,7 +196,7 @@ class Course(models.Model):
     capacity = models.PositiveIntegerField(default=10)  # ظرفیت اولیه
     remaining_capacity = models.PositiveIntegerField(default=0)  # ظرفیت باقی‌مانده
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
+    professor = models.ForeignKey(Professor, on_delete=models.SET_NULL, null=True, blank=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
     prerequisites = models.ManyToManyField('self', through='Prerequisite', symmetrical=False, related_name='required_for')
     corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
