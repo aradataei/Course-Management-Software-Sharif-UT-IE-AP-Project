@@ -1,0 +1,33 @@
+<!-- templates/admin/professor_list.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>لیست اساتید</h2>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>نام استاد</th>
+                <th>کد استادی</th>
+                <th>دپارتمان</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for professor in professors %}
+            <tr>
+                <td>{{ professor.first_name }} {{ professor.last_name }}</td>
+                <td>{{ professor.instructor_id }}</td>
+                <td>{{ professor.department.department_name }}</td>
+                <td>
+                    <a href="{% url 'professor_edit_view' professor.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
+                    <a href="{% url 'professor_delete_view' professor.pk %}" class="btn btn-danger btn-sm">حذف</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

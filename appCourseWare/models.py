@@ -37,7 +37,6 @@ class CustomUserManager(BaseUserManager):
 
 
 class UserLevel(models.Model):
-    user_level_id = models.AutoField(primary_key=True)
     user_level_name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -70,7 +69,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Major(models.Model):
-    major_id = models.AutoField(primary_key=True)
     major_name = models.CharField(max_length=30)
 
     def __str__(self):
@@ -153,7 +151,6 @@ class Student(models.Model):
 
 
 class Department(models.Model):
-    department_id = models.AutoField(primary_key=True)
     department_name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -163,7 +160,6 @@ class Department(models.Model):
 
 
 class Professor(models.Model):
-    instructor_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
@@ -176,7 +172,6 @@ class Professor(models.Model):
 
 
 class Classroom(models.Model):
-    classroom_id = models.AutoField(primary_key=True)
     classroom_name = models.CharField(max_length=100)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
@@ -186,7 +181,6 @@ class Classroom(models.Model):
 
 
 class Course(models.Model):
-    course_id = models.AutoField(primary_key=True)
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
     exam_time = models.DateTimeField()
@@ -252,7 +246,6 @@ class Course(models.Model):
 
 
 class StudentCourse(models.Model):
-    enrollment_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     enrollment_date = models.DateField(auto_now_add=True)
@@ -291,7 +284,6 @@ class StudentCourse(models.Model):
 
 
 class Prerequisite(models.Model):
-    prerequisite_id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='prerequisites_set')
     required_course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='required_prerequisites')
 
@@ -305,7 +297,6 @@ class Prerequisite(models.Model):
 
 
 class CoRequisite(models.Model):
-    corequisite_id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='corequisites_set')
     required_course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='required_corequisites')
 

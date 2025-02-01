@@ -1,0 +1,37 @@
+<!-- templates/admin/major_list.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>لیست رشته‌های تحصیلی</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'major_edit_view' %}" class="btn btn-success mb-3">+ افزودن رشته جدید</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>نام رشته</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for major in majors %}
+            <tr>
+                <td>{{ major.major_name }}</td>
+                <td>
+                    <a href="{% url 'major_edit_view' major.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
+                    <a href="{% url 'major_delete_view' major.pk %}" class="btn btn-danger btn-sm">حذف</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

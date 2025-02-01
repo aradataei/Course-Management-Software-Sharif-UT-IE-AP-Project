@@ -1,0 +1,46 @@
+<!-- templates/admin/manage_dependencies.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>مدیریت وابستگی‌های درس: {{ course.course_name }}</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- پیشنیازها -->
+            <div class="col-md-6">
+                <h4>پیشنیازها</h4>
+                <select name="prerequisites" class="form-control" multiple size="10">
+                    {% for c in all_courses %}
+                        <option value="{{ c.pk }}" 
+                            {% if c in course.prerequisites.all %}selected{% endif %}>
+                            {{ c.course_code }} - {{ c.course_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- همنیازها -->
+            <div class="col-md-6">
+                <h4>همنیازها</h4>
+                <select name="corequisites" class="form-control" multiple size="10">
+                    {% for c in all_courses %}
+                        <option value="{{ c.pk }}" 
+                            {% if c in course.corequisites.all %}selected{% endif %}>
+                            {{ c.course_code }} - {{ c.course_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+            <a href="{% url 'course_list_view' %}" class="btn btn-secondary">بازگشت</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

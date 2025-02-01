@@ -1,0 +1,42 @@
+<!-- templates/admin/course_list.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>لیست دروس</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'course_edit_view' %}" class="btn btn-success mb-3">+ افزودن درس جدید</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>نام درس</th>
+                <th>کد درس</th>
+                <th>واحد</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course.course_name }}</td>
+                <td>{{ course.course_code }}</td>
+                <td>{{ course.credit }}</td>
+                <td>
+                    <a href="{% url 'course_edit_view' course.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
+                    <a href="{% url 'course_delete_view' course.pk %}" class="btn btn-danger btn-sm">حذف</a>
+                    <a href="{% url 'manage_prerequisites_view' course.pk %}" class="btn btn-info btn-sm">مدیریت وابستگی‌ها</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

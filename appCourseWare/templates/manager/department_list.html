@@ -1,0 +1,36 @@
+<!-- templates/admin/department_list.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>لیست دپارتمان‌ها</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'department_edit_view' %}" class="btn btn-success mb-3">+ افزودن دپارتمان جدید</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>نام دپارتمان</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for department in departments %}
+            <tr>
+                <td>{{ department.department_name }}</td>
+                <td>
+                    <a href="{% url 'department_edit_view' department.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

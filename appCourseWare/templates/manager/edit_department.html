@@ -1,0 +1,25 @@
+<!-- templates/admin/edit_department.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>{% if department %}ویرایش{% else %}ایجاد{% endif %} دپارتمان</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>نام دپارتمان:</label>
+            <input type="text" 
+                   name="department_name" 
+                   value="{% if department %}{{ department.department_name }}{% endif %}" 
+                   class="form-control"
+                   required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">ذخیره</button>
+        <a href="{% url 'department_list_view' %}" class="btn btn-secondary">لغو</a>
+    </form>
+</div>
+{% endblock %}

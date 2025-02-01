@@ -1,0 +1,38 @@
+<!-- templates/admin/classroom_list.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>لیست کلاس‌ها</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'classroom_edit_view' %}" class="btn btn-success mb-3">+ افزودن کلاس جدید</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>نام کلاس</th>
+                <th>دپارتمان</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for classroom in classrooms %}
+            <tr>
+                <td>{{ classroom.classroom_name }}</td>
+                <td>{{ classroom.department.department_name }}</td>
+                <td>
+                    <a href="{% url 'classroom_edit_view' classroom.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

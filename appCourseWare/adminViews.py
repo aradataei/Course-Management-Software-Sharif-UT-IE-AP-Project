@@ -1,8 +1,6 @@
-# adminViews.py
-
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
+from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import (
     Course, Student, StudentCourse, Professor,
@@ -36,7 +34,7 @@ def manage_users_view(request):
             user.save()
             messages.success(request, 'ادمین با موفقیت حذف شد')
             
-    return render(request, 'admin/manage_users.html', {
+    return render(request, 'manager/manage_users.html', {
         'users': users,
         'user_levels': user_levels
     })
@@ -46,7 +44,7 @@ def manage_users_view(request):
 def student_list_view(request):
     """لیست تمام دانشجویان"""
     students = Student.objects.select_related('user', 'major').all()
-    return render(request, 'admin/student_list.html', {'students': students})
+    return render(request, 'manager/student_list.html', {'students': students})
 
 @staff_member_required
 def student_edit_view(request, pk):
@@ -63,7 +61,7 @@ def student_edit_view(request, pk):
         return redirect('student_list_view')
     
     majors = Major.objects.all()
-    return render(request, 'admin/edit_student.html', {
+    return render(request, 'manager/edit_student.html', {
         'student': student,
         'majors': majors
     })
@@ -76,14 +74,14 @@ def student_delete_view(request, pk):
         student.user.delete()  # حذف کاربر مرتبط
         messages.success(request, 'دانشجو با موفقیت حذف شد')
         return redirect('student_list_view')
-    return render(request, 'admin/confirm_delete.html', {'object': student})
+    return render(request, 'manager/confirm_delete.html', {'object': student})
 
 # ------------------------ مدیریت اساتید --------------------------
 @staff_member_required
 def professor_list_view(request):
     """لیست تمام اساتید"""
     professors = Professor.objects.select_related('department').all()
-    return render(request, 'admin/professor_list.html', {'professors': professors})
+    return render(request, 'manager/professor_list.html', {'professors': professors})
 
 @staff_member_required
 def professor_edit_view(request, pk):
@@ -99,7 +97,7 @@ def professor_edit_view(request, pk):
         return redirect('professor_list_view')
     
     departments = Department.objects.all()
-    return render(request, 'admin/edit_professor.html', {
+    return render(request, 'manager/edit_professor.html', {
         'professor': professor,
         'departments': departments
     })
@@ -112,13 +110,13 @@ def professor_delete_view(request, pk):
         professor.delete()
         messages.success(request, 'استاد با موفقیت حذف شد')
         return redirect('professor_list_view')
-    return render(request, 'admin/confirm_delete.html', {'object': professor})
+    return render(request, 'manager/confirm_delete.html', {'object': professor})
 
 # ------------------------ مدیریت دپارتمان‌ها --------------------------
 @staff_member_required
 def department_list_view(request):
     departments = Department.objects.all()
-    return render(request, 'admin/department_list.html', {'departments': departments})
+    return render(request, 'manager/department_list.html', {'departments': departments})
 
 @staff_member_required
 def department_edit_view(request, pk=None):
@@ -140,13 +138,13 @@ def department_edit_view(request, pk=None):
         messages.success(request, 'دپارتمان با موفقیت ذخیره شد')
         return redirect('department_list_view')
     
-    return render(request, 'admin/edit_department.html', {'department': department})
+    return render(request, 'manager/edit_department.html', {'department': department})
 
 # ------------------------ مدیریت کلاس‌ها --------------------------
 @staff_member_required
 def classroom_list_view(request):
     classrooms = Classroom.objects.select_related('department').all()
-    return render(request, 'admin/classroom_list.html', {'classrooms': classrooms})
+    return render(request, 'manager/classroom_list.html', {'classrooms': classrooms})
 
 @staff_member_required
 def classroom_edit_view(request, pk=None):
@@ -174,7 +172,7 @@ def classroom_edit_view(request, pk=None):
         return redirect('classroom_list_view')
     
     departments = Department.objects.all()
-    return render(request, 'admin/edit_classroom.html', {
+    return render(request, 'manager/edit_classroom.html', {
         'classroom': classroom,
         'departments': departments
     })
@@ -202,7 +200,7 @@ def manage_prerequisites_view(request, course_id):
         messages.success(request, 'وابستگی‌ها با موفقیت بروزرسانی شدند')
         return redirect('course_detail_view', pk=course_id)
     
-    return render(request, 'admin/manage_dependencies.html', {
+    return render(request, 'manager/manage_dependencies.html', {
         'course': course,
         'all_courses': all_courses
     })
