@@ -5,8 +5,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.core.exceptions import ValidationError
 
 
-
-
 student_id_validator = RegexValidator(
     regex=r'^\d{9}$',
     message='Student ID must be a 9-digit number.'

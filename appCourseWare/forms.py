@@ -3,11 +3,6 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import (
     Student,
     CustomUser,
-    Course,
-    Professor,
-    Classroom,
-    Prerequisite,
-    CoRequisite,
 )
 
 class CustomUserCreationForm(UserCreationForm):
