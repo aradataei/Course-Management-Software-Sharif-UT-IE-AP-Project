@@ -18,7 +18,6 @@ class CustomUserManager(BaseUserManager):
         if len(str(student_id)) != 9:
             raise ValueError('Student ID must be a 9-digit number')
         
-        student_id = int(student_id)
         user = self.model(student_id=student_id, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
