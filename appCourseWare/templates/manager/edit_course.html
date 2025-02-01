@@ -1,0 +1,43 @@
+<!-- templates/admin/edit_course.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>{% if course %}ویرایش{% else %}ایجاد{% endif %} درس</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>نام درس:</label>
+            <input type="text" 
+                   name="course_name" 
+                   value="{% if course %}{{ course.course_name }}{% endif %}" 
+                   class="form-control"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label>کد درس:</label>
+            <input type="text" 
+                   name="course_code" 
+                   value="{% if course %}{{ course.course_code }}{% endif %}" 
+                   class="form-control"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label>واحد:</label>
+            <input type="number" 
+                   name="credit" 
+                   value="{% if course %}{{ course.credit }}{% endif %}" 
+                   class="form-control"
+                   required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">ذخیره</button>
+        <a href="{% url 'course_list_view' %}" class="btn btn-secondary">لغو</a>
+    </form>
+</div>
+{% endblock %}

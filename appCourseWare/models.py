@@ -5,8 +5,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.core.exceptions import ValidationError
 
 
-
-
 student_id_validator = RegexValidator(
     regex=r'^\d{9}$',
     message='Student ID must be a 9-digit number.'
@@ -18,7 +16,6 @@ class CustomUserManager(BaseUserManager):
         if len(str(student_id)) != 9:
             raise ValueError('Student ID must be a 9-digit number')
         
-        student_id = int(student_id)
         user = self.model(student_id=student_id, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -40,7 +37,6 @@ class CustomUserManager(BaseUserManager):
 
 
 class UserLevel(models.Model):
-    user_level_id = models.AutoField(primary_key=True)
     user_level_name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -73,10 +69,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Major(models.Model):
-    major_id = models.AutoField(primary_key=True)
     major_name = models.CharField(max_length=30)
 
-
+    def __str__(self):
+        return self.major_name
 
 
 class Student(models.Model):
@@ -116,14 +112,20 @@ class Student(models.Model):
             MinValueValidator(0.0),
             MaxValueValidator(20.0)
         ],
-        default=16.00
     )
     
     max_units = models.PositiveIntegerField(default=0, editable=False)
     
     email = models.EmailField(unique=True)
-    major = models.ForeignKey('Major', on_delete=models.CASCADE)  # فرض بر وجود مدل Major
-    admission_year = models.PositiveIntegerField()
+    major = models.ForeignKey('Major', on_delete=models.SET_NULL, null=True)  # فرض بر وجود مدل Major
+    admission_year = models.PositiveIntegerField(default=1403, choices={
+        1403: 1403,
+        1402: 1402,
+        1401: 1401,
+        1400: 1400,
+        1399: 1399,
+        1398: 1388,
+    })
     
     def save(self, *args, **kwargs):
         if self.gpa < 14:
@@ -149,7 +151,6 @@ class Student(models.Model):
 
 
 class Department(models.Model):
-    department_id = models.AutoField(primary_key=True)
     department_name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -158,8 +159,7 @@ class Department(models.Model):
 
 
 
-class Instructor(models.Model):
-    instructor_id = models.AutoField(primary_key=True)
+class Professor(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
@@ -172,7 +172,6 @@ class Instructor(models.Model):
 
 
 class Classroom(models.Model):
-    classroom_id = models.AutoField(primary_key=True)
     classroom_name = models.CharField(max_length=100)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
@@ -182,14 +181,13 @@ class Classroom(models.Model):
 
 
 class Course(models.Model):
-    course_id = models.AutoField(primary_key=True)
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
     exam_time = models.DateTimeField()
     capacity = models.PositiveIntegerField(default=10)  # ظرفیت اولیه
     remaining_capacity = models.PositiveIntegerField(default=0)  # ظرفیت باقی‌مانده
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
+    professor = models.ForeignKey(Professor, on_delete=models.SET_NULL, null=True, blank=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
     prerequisites = models.ManyToManyField('self', through='Prerequisite', symmetrical=False, related_name='required_for')
     corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
@@ -248,13 +246,12 @@ class Course(models.Model):
 
 
 class StudentCourse(models.Model):
-    enrollment_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     enrollment_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=(
-        ('enrolled', 'در حال گذراندن'),  # "در حال گذراندن"
-        ('dropped', 'افتاده'),           # "افتاده"
+        ('enrolled', 'ثبت نام شده'),  # "در حال گذراندن"
+        ('pending', 'انتظار'),           # "افتاده"
         ('withdrawn', 'حذف اضطراری'),    # "حذف اضطراری"
         ('completed', 'گذرانده'),        # "گذرانده"
     ))
@@ -287,7 +284,6 @@ class StudentCourse(models.Model):
 
 
 class Prerequisite(models.Model):
-    prerequisite_id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='prerequisites_set')
     required_course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='required_prerequisites')
 
@@ -301,7 +297,6 @@ class Prerequisite(models.Model):
 
 
 class CoRequisite(models.Model):
-    corequisite_id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='corequisites_set')
     required_course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='required_corequisites')
 

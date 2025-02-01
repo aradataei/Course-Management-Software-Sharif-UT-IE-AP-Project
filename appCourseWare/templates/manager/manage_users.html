@@ -1,0 +1,47 @@
+<!-- templates/admin/manage_users.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>مدیریت کاربران سیستم</h2>
+    
+    <!-- نمایش پیام‌ها -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>شناسه کاربری</th>
+                <th>نام کاربری</th>
+                <th>وضعیت ادمین</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.student_id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{% if user.is_staff %}✅{% else %}❌{% endif %}</td>
+                <td>
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.student_id }}">
+                        {% if not user.is_staff %}
+                            <button name="action" value="make_admin" class="btn btn-success btn-sm">تبدیل به ادمین</button>
+                        {% else %}
+                            <button name="action" value="remove_admin" class="btn btn-danger btn-sm">حذف ادمین</button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

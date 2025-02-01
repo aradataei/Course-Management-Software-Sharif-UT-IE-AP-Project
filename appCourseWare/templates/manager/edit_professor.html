@@ -1,0 +1,43 @@
+<!-- templates/admin/edit_professor.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>ویرایش استاد: {{ professor.first_name }} {{ professor.last_name }}</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>نام:</label>
+            <input type="text" name="first_name" value="{{ professor.first_name }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label>نام خانوادگی:</label>
+            <input type="text" name="last_name" value="{{ professor.last_name }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label>ایمیل:</label>
+            <input type="email" name="email" value="{{ professor.email }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label>دپارتمان:</label>
+            <select name="department" class="form-control">
+                {% for department in departments %}
+                    <option value="{{ department.pk }}" 
+                        {% if department.pk == professor.department.pk %}selected{% endif %}>
+                        {{ department.department_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+        <a href="{% url 'professor_list_view' %}" class="btn btn-secondary">لغو</a>
+    </form>
+</div>
+{% endblock %}
