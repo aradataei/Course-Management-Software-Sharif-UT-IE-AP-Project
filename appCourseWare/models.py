@@ -119,12 +119,12 @@ class Student(models.Model):
     email = models.EmailField(unique=True)
     major = models.ForeignKey('Major', on_delete=models.SET_NULL, null=True)  # فرض بر وجود مدل Major
     admission_year = models.PositiveIntegerField(default=1403, choices={
-        '1403': 1403,
-        '1402': 1402,
-        '1401': 1401,
-        '1400': 1400,
-        '1399': 1399,
-        '1398': 1388,
+        1403: 1403,
+        1402: 1402,
+        1401: 1401,
+        1400: 1400,
+        1399: 1399,
+        1398: 1388,
     })
     
     def save(self, *args, **kwargs):

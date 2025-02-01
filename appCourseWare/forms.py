@@ -26,6 +26,7 @@ class StudentProfileForm(forms.ModelForm):
             'major': 'رشته تحصیلی',
             'phone_number': 'استاد راهنما',
             'email': 'وضعیت نظام وظیفه',
+            'admission_form': 'سال ورود',
         }
 
 

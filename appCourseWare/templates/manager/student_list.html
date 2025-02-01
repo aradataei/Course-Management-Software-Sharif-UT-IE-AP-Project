@@ -18,8 +18,8 @@
         <tbody>
             {% for student in students %}
             <tr>
-                <td>{{ student.user.first_name }} {{ student.user.last_name }}</td>
-                <td>{{ student.student_id }}</td>
+                <td>{{ student.first_name }} {{ student.user.last_name }}</td>
+                <td>{{ student.user.student_id }}</td>
                 <td>{{ student.major.major_name }}</td>
                 <td>
                     <a href="{% url 'student_edit_view' student.pk %}" class="btn btn-warning btn-sm">ویرایش</a>

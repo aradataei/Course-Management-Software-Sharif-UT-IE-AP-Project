@@ -1,6 +1,6 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import (
     Course, Student, StudentCourse, Professor,
@@ -48,17 +48,26 @@ def student_list_view(request):
 
 @staff_member_required
 def student_edit_view(request, pk):
-    """ویرایش پروفایل دانشجو"""
     student = get_object_or_404(Student, pk=pk)
     
     if request.method == 'POST':
-        # بروزرسانی فیلدها
+        # پردازش فیلد major به صورت جداگانه
+        major_id = request.POST.get('major')
+        if major_id:
+            student.major = get_object_or_404(Major, pk=major_id)
+        
+        # بروزرسانی سایر فیلدها
         for field in get_model_fields(Student):
-            if field in request.POST and field != 'user':
+            if field in request.POST and field not in ['user', 'major']:  # exclude major
                 setattr(student, field, request.POST.get(field))
-        student.save()
-        messages.success(request, 'اطلاعات دانشجو با موفقیت بروزرسانی شد')
-        return redirect('student_list_view')
+        
+        try:
+            student.full_clean()  # اعتبارسنجی مدل
+            student.save()
+            messages.success(request, 'اطلاعات دانشجو با موفقیت بروزرسانی شد')
+            return redirect('student_list_view')
+        except ValidationError as e:
+            messages.error(request, f'خطا در اعتبارسنجی: {e}')
     
     majors = Major.objects.all()
     return render(request, 'manager/edit_student.html', {
