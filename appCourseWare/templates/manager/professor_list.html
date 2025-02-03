@@ -1,33 +1,55 @@
-<!-- templates/admin/professor_list.html -->
 {% extends 'admin/base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container">
-    <h2>لیست اساتید</h2>
-    
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>نام استاد</th>
-                <th>کد استادی</th>
-                <th>دپارتمان</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for professor in professors %}
-            <tr>
-                <td>{{ professor.first_name }} {{ professor.last_name }}</td>
-                <td>{{ professor.instructor_id }}</td>
-                <td>{{ professor.department.department_name }}</td>
-                <td>
-                    <a href="{% url 'professor_edit_view' professor.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
-                    <a href="{% url 'professor_delete_view' professor.pk %}" class="btn btn-danger btn-sm">حذف</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <h2 class="mb-4">مدیریت اساتید</h2>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-info">
+                <tr>
+                    <th>نام استاد</th>
+                    <th>دپارتمان</th>
+                    <th>ایمیل</th>
+                    <th>تعداد دروس</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for professor in professors %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar me-2">
+                                <i class="fas fa-chalkboard-teacher fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <div>{{ professor.first_name }} {{ professor.last_name }}</div>
+                                <small class="text-muted">کد پرسنلی: {{ professor.user.student_id }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ professor.department.department_name }}</td>
+                    <td><a href="mailto:{{ professor.email }}">{{ professor.email }}</a></td>
+                    <td>{{ professor.course_set.count }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{% url 'professor_edit_view' professor.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'professor_delete_view' professor.pk %}" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-list-alt"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

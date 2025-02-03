@@ -1,5 +1,6 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import (
@@ -213,3 +214,146 @@ def manage_prerequisites_view(request, course_id):
         'course': course,
         'all_courses': all_courses
     })
+
+
+@staff_member_required
+def course_list_view(request):
+    courses = Course.objects.select_related(
+        'department', 'professor', 'classroom'
+    ).prefetch_related('prerequisites', 'corequisites').all()
+    
+    # Filtering logic
+    department_filter = request.GET.get('department')
+    if department_filter:
+        courses = courses.filter(department__department_name=department_filter)
+    
+    return render(request, 'manager/course_list.html', {
+        'courses': courses,
+        'departments': Department.objects.all(),
+        'classrooms': Classroom.objects.all(),
+        'professors': Professor.objects.all()
+    })
+
+@staff_member_required
+def course_create_view(request):
+    if request.method == 'POST':
+        try:
+            # Main course data
+            course = Course.objects.create(
+                course_name=request.POST['course_name'],
+                course_code=request.POST['course_code'],
+                department_id=request.POST['department'],
+                professor_id=request.POST.get('professor'),
+                classroom_id=request.POST.get('classroom'),
+                capacity=request.POST['capacity'],
+                class_date=request.POST.get('class_date', ''),
+                class_time=request.POST.get('class_time', ''),
+                exam_time=request.POST['exam_time']
+            )
+            
+            # Handle prerequisites and corequisites
+            prerequisites = request.POST.getlist('prerequisites')
+            corequisites = request.POST.getlist('corequisites')
+            
+            Prerequisite.objects.bulk_create([
+                Prerequisite(course=course, prerequisite_id=p_id) 
+                for p_id in prerequisites
+            ])
+            
+            CoRequisite.objects.bulk_create([
+                CoRequisite(course=course, corequisite_id=c_id) 
+                for c_id in corequisites
+            ])
+            
+            messages.success(request, 'درس جدید با موفقیت ایجاد شد')
+            return redirect('course_list_view')
+            
+        except Exception as e:
+            messages.error(request, f'خطا در ایجاد درس: {str(e)}')
+    
+    return render(request, 'manager/course_edit.html', {
+        'departments': Department.objects.all(),
+        'professors': Professor.objects.all(),
+        'classrooms': Classroom.objects.all(),
+        'all_courses': Course.objects.exclude(
+            course_code=request.POST.get('course_code')
+        )
+    })
+
+@staff_member_required
+def course_edit_view(request, pk=None):
+    course = get_object_or_404(Course, pk=pk) if pk else None
+    
+    if request.method == 'POST':
+        try:
+            # Update basic course info
+            course.course_name = request.POST['course_name']
+            course.department_id = request.POST['department']
+            course.professor_id = request.POST.get('professor')
+            course.classroom_id = request.POST.get('classroom')
+            course.capacity = request.POST['capacity']
+            course.class_date = request.POST.get('class_date', '')
+            course.class_time = request.POST.get('class_time', '')
+            course.exam_time = request.POST['exam_time']
+            course.full_clean()
+            course.save()
+            
+            # Update prerequisites
+            current_prerequisites = set(course.prerequisites.values_list('id', flat=True))
+            new_prerequisites = set(map(int, request.POST.getlist('prerequisites')))
+            
+            # Remove obsolete prerequisites
+            Prerequisite.objects.filter(
+                course=course, 
+                prerequisite_id__in=current_prerequisites - new_prerequisites
+            ).delete()
+            
+            # Add new prerequisites
+            new_prereq_ids = new_prerequisites - current_prerequisites
+            Prerequisite.objects.bulk_create([
+                Prerequisite(course=course, prerequisite_id=p_id) 
+                for p_id in new_prereq_ids
+            ])
+            
+            # Update corequisites (same logic as prerequisites)
+            current_corequisites = set(course.corequisites.values_list('id', flat=True))
+            new_corequisites = set(map(int, request.POST.getlist('corequisites')))
+            
+            CoRequisite.objects.filter(
+                course=course, 
+                corequisite_id__in=current_corequisites - new_corequisites
+            ).delete()
+            
+            new_coreq_ids = new_corequisites - current_corequisites
+            CoRequisite.objects.bulk_create([
+                CoRequisite(course=course, corequisite_id=c_id) 
+                for c_id in new_coreq_ids
+            ])
+            
+            messages.success(request, 'تغییرات درس با موفقیت ذخیره شد')
+            return redirect('course_list_view')
+            
+        except Exception as e:
+            messages.error(request, f'خطا در ویرایش درس: {str(e)}')
+    
+    return render(request, 'manager/course_edit.html', {
+        'course': course,
+        'departments': Department.objects.all(),
+        'professors': Professor.objects.all(),
+        'classrooms': Classroom.objects.all(),
+        'all_courses': Course.objects.exclude(id=course.id) if course else Course.objects.all(),
+        'selected_prerequisites': course.prerequisites.values_list('id', flat=True) if course else [],
+        'selected_corequisites': course.corequisites.values_list('id', flat=True) if course else []
+    })
+
+@staff_member_required
+def course_delete_view(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    if request.method == 'POST':
+        try:
+            course.delete()
+            messages.success(request, 'درس با موفقیت حذف شد')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف درس: {str(e)}')
+        return redirect('course_list_view')
+    return render(request, 'manager/confirm_delete.html', {'object': course})

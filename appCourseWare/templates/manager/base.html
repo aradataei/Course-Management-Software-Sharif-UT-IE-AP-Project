@@ -11,7 +11,7 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    {% load static %}
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
     
@@ -21,7 +21,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'admin_home' %}">پنل مدیریت</a>
+            {% comment %} <a class="navbar-brand" href="{% url 'admin_home' %}">پنل مدیریت</a> {% endcomment %}
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -30,7 +30,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'manage_users_view' %}">
+                        <a class="nav-link" href="{% url 'manage_users' %}">
                             <i class="fa-solid fa-users"></i> کاربران
                         </a>
                     </li>

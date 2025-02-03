@@ -1,37 +1,248 @@
-<!-- templates/admin/major_list.html -->
-{% extends 'admin/base.html' %}
-{% load static %}
+{% extends 'manager/base.html' %}
+{% load static humanize %}
 
 {% block content %}
 <div class="container">
-    <h2>لیست رشته‌های تحصیلی</h2>
-    
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">مدیریت جامع رشته‌های تحصیلی</h2>
+        <a href="{% url 'major_edit_view' %}" class="btn btn-success">
+            <i class="fas fa-plus-circle"></i> ایجاد رشته جدید
+        </a>
+    </div>
 
-    <a href="{% url 'major_edit_view' %}" class="btn btn-success mb-3">+ افزودن رشته جدید</a>
+    <!-- آمار کلی -->
+    <div class="card border-primary mb-4">
+        <div class="card-body py-3">
+            <div class="row g-4">
+                <div class="col-6 col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary text-white rounded-circle p-3">
+                            <i class="fas fa-graduation-cap fa-2x"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">تعداد رشته‌ها</h6>
+                            <span class="h4">{{ majors.count }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success text-white rounded-circle p-3">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">دانشجویان فعال</h6>
+                            <span class="h4">{{ total_students|intcomma }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info text-white rounded-circle p-3">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">معدل متوسط</h6>
+                            <span class="h4">{{ avg_gpa|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning text-white rounded-circle p-3">
+                            <i class="fas fa-building fa-2x"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">دپارتمان‌ها</h6>
+                            <span class="h4">{{ department_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>نام رشته</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for major in majors %}
-            <tr>
-                <td>{{ major.major_name }}</td>
-                <td>
-                    <a href="{% url 'major_edit_view' major.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
-                    <a href="{% url 'major_delete_view' major.pk %}" class="btn btn-danger btn-sm">حذف</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- فیلترها و جستجو -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="جستجو در نام رشته..." id="searchInput">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="departmentFilter">
+                        <option value="">همه دپارتمان‌ها</option>
+                        {% for department in departments %}
+                        <option value="{{ department.department_name }}">{{ department.department_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text">تعداد دانشجو</span>
+                        <input type="number" class="form-control" placeholder="از" id="minStudents">
+                        <input type="number" class="form-control" placeholder="تا" id="maxStudents">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول اصلی -->
+    <div class="card border-dark">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="mainTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>نام رشته</th>
+                            <th>دپارتمان</th>
+                            <th>تعداد دانشجو</th>
+                            <th>معدل متوسط</th>
+                            <th>واحدهای درسی</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for major in majors %}
+                        <tr data-department="{{ major.department.department_name }}" 
+                            data-students="{{ major.student_set.count }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-40px me-3">
+                                        <span class="symbol-label bg-light-primary">
+                                            <i class="fas fa-book-open fs-2 text-primary"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ major.major_name }}</div>
+                                        <div class="text-muted fs-7">{{ major.department.faculty.faculty_name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ major.department.department_name }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress w-100px me-3" style="height: 20px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                            style="width: {{ major.get_student_percentage }}%" 
+                                            aria-valuenow="{{ major.get_student_percentage }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <span>{{ major.student_set.count|intcomma }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="rating me-2">
+                                        {% with major.avg_gpa|floatformat:0 as stars %}
+                                        {% for i in "12345" %}
+                                        <i class="fas fa-star {% if forloop.counter <= stars %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                        {% endwith %}
+                                    </div>
+                                    <span class="badge bg-primary">{{ major.avg_gpa|floatformat:2 }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="text-muted fs-7">الزامی: {{ major.required_units }}</span>
+                                    <span class="text-muted fs-7">اختیاری: {{ major.elective_units }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'major_edit_view' major.pk %}" 
+                                       class="btn btn-icon btn-sm btn-warning"
+                                       data-bs-toggle="tooltip" 
+                                       title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'major_delete_view' major.pk %}" 
+                                       class="btn btn-icon btn-sm btn-danger"
+                                       data-bs-toggle="tooltip" 
+                                       title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    <a href="{% url 'major_detail_view' major.pk %}" 
+                                       class="btn btn-icon btn-sm btn-info"
+                                       data-bs-toggle="tooltip" 
+                                       title="جزئیات">
+                                        <i class="fas fa-info-circle"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- استایل‌های سفارشی -->
+<style>
+.symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.475rem;
+}
+.symbol-label {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.rating {
+    color: #ffc107;
+}
+.progress {
+    background-color: #e9ecef;
+    border-radius: 0.475rem;
+}
+</style>
+
+<!-- اسکریپت‌های تعاملی -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // فعال‌سازی جستجو
+    const searchInput = document.getElementById('searchInput');
+    const departmentFilter = document.getElementById('departmentFilter');
+    const minStudents = document.getElementById('minStudents');
+    const maxStudents = document.getElementById('maxStudents');
+    const rows = document.querySelectorAll('#mainTable tbody tr');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const department = departmentFilter.value;
+        const min = parseInt(minStudents.value) || 0;
+        const max = parseInt(maxStudents.value) || Infinity;
+
+        rows.forEach(row => {
+            const name = row.cells[0].textContent.toLowerCase();
+            const dept = row.dataset.department;
+            const students = parseInt(row.dataset.students);
+
+            const nameMatch = name.includes(searchTerm);
+            const deptMatch = department ? dept === department : true;
+            const studentMatch = students >= min && students <= max;
+
+            row.style.display = (nameMatch && deptMatch && studentMatch) ? '' : 'none';
+        });
+    }
+
+    [searchInput, departmentFilter, minStudents, maxStudents].forEach(element => {
+        element.addEventListener('input', filterTable);
+    });
+
+    // فعال‌سازی تولتیپ‌ها
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+});
+</script>
 {% endblock %}

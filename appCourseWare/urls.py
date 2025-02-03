@@ -20,5 +20,13 @@ urlpatterns = [
     path('manager/departments/edit/<int:pk>/', adminViews.department_edit_view, name='department_edit_view'),
     path('manager/classrooms/', adminViews.classroom_list_view, name='classroom_list_view'),
     path('manager/classrooms/edit/<int:pk>/', adminViews.classroom_edit_view, name='classroom_edit_view'),
-    path('manager/courses/<int:course_id>/prerequisites/', adminViews.manage_prerequisites_view, name='manage_prerequisites'),
+
+    # Course Management
+    path('manager/courses/', adminViews.course_list_view, name='course_list_view'),
+    path('manager/courses/create/', adminViews.course_create_view, name='course_create_view'),
+    path('manager/courses/edit/<int:pk>/', adminViews.course_edit_view, name='course_edit_view'),
+    path('manager/courses/delete/<int:pk>/', adminViews.course_delete_view, name='course_delete_view'),
+    path('manager/courses/<int:course_id>/prerequisites/', 
+         adminViews.manage_prerequisites_view, name='manage_prerequisites'),
+    
 ]

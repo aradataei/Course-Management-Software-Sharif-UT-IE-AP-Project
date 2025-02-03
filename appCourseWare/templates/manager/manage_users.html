@@ -1,47 +1,88 @@
-<!-- templates/admin/manage_users.html -->
 {% extends 'admin/base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container">
-    <h2>مدیریت کاربران سیستم</h2>
+    <h2 class="mb-4">مدیریت جامع کاربران سیستم</h2>
     
-    <!-- نمایش پیام‌ها -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
+    {% include 'partials/messages.html' %}
 
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>شناسه کاربری</th>
-                <th>نام کاربری</th>
-                <th>وضعیت ادمین</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.student_id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{% if user.is_staff %}✅{% else %}❌{% endif %}</td>
-                <td>
-                    <form method="post" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="user_id" value="{{ user.student_id }}">
-                        {% if not user.is_staff %}
-                            <button name="action" value="make_admin" class="btn btn-success btn-sm">تبدیل به ادمین</button>
-                        {% else %}
-                            <button name="action" value="remove_admin" class="btn btn-danger btn-sm">حذف ادمین</button>
-                        {% endif %}
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="bg-light">
+                <tr>
+                    <th>شناسه دانشجویی</th>
+                    <th>نام کامل</th>
+                    <th>سطح کاربری</th>
+                    <th>وضعیت فعال</th>
+                    <th>دسترسی ادمین</th>
+                    <th>تاریخ ثبت‌نام</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.student_id|default:'-' }}</td>
+                    <td>{{ user.get_full_name|default:'-' }}</td>
+                    <td>{{ user.user_level.user_level_name }}</td>
+                    <td class="text-center">{% if user.is_active %}✅{% else %}❌{% endif %}</td>
+                    <td class="text-center">{% if user.is_staff %}✅{% else %}❌{% endif %}</td>
+                    <td>{{ user.date_joined|date:"Y/m/d" }}</td>
+                    <td>
+                        <form method="post" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <div class="btn-group">
+                                {% if not user.is_staff %}
+                                <button name="action" value="make_admin" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-user-shield"></i>
+                                </button>
+                                {% else %}
+                                <button name="action" value="remove_admin" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-user-lock"></i>
+                                </button>
+                                {% endif %}
+                                <a href="#" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#userDetail{{ user.id }}">
+                                    <i class="fas fa-info-circle"></i>
+                                </a>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+{% for user in users %}
+<!-- User Detail Modal -->
+<div class="modal fade" id="userDetail{{ user.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات کامل کاربر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-4">ایمیل:</dt>
+                    <dd class="col-sm-8">{{ user.email|default:'-' }}</dd>
+                    
+                    <dt class="col-sm-4">آخرین ورود:</dt>
+                    <dd class="col-sm-8">{{ user.last_login|date:"Y/m/d H:i"|default:'-' }}</dd>
+                    
+                    <dt class="col-sm-4">وضعیت حساب:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if user.is_active %}فعال{% else %}غیرفعال{% endif %}
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
