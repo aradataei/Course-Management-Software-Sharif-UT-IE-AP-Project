@@ -1,11 +1,11 @@
-{% extends 'admin/base.html' %}
+{% extends 'manager/base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container">
     <h2 class="mb-4">مدیریت جامع کاربران سیستم</h2>
     
-    {% include 'partials/messages.html' %}
+    {% comment %} {% include 'partials/messages.html' %} {% endcomment %}
 
     <div class="table-responsive">
         <table class="table table-hover table-bordered">
