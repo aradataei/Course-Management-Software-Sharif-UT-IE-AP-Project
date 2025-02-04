@@ -194,7 +194,26 @@ class Classroom(models.Model):
 
 
 
+
+
 class Course(models.Model):
+
+    DAYS_OF_WEEK = [
+    ('Sat', 'شنبه'),
+    ('Sun', 'یکشنبه'),
+    ('Mon', 'دوشنبه'),
+    ('Tue', 'سه‌شنبه'),
+    ('Wed', 'چهارشنبه'),
+    ]
+
+    TIME_SLOTS = [
+    ('8:00-10:00', '8:00-10:00'),
+    ('10:00-12:00', '10:00-12:00'),
+    ('14:00-16:00', '14:00-16:00'),
+    ('16:00-18:00', '16:00-18:00'),
+    ]
+
+
     course_name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=50, unique=True)
     exam_time = models.DateTimeField()
@@ -205,32 +224,37 @@ class Course(models.Model):
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
     prerequisites = models.ManyToManyField('self', through='Prerequisite', symmetrical=False, related_name='required_for')
     corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
+    units = models.PositiveIntegerField(default=3)
+    major = models.ForeignKey(Major, related_name='majors', on_delete=models.SET_NULL, null=True, blank=True)
 
-    DAYS_OF_WEEK = [
-        ('Sat', 'شنبه'),
-        ('Sun', 'یکشنبه'),
-        ('Mon', 'دوشنبه'),
-        ('Tue', 'سه‌شنبه'),
-        ('Wed', 'چهارشنبه'),
-    ]
-    TIME_SLOTS = [
-        ('8:00-10:00', '8:00-10:00'),
-        ('10:00-12:00', '10:00-12:00'),
-        ('14:00-16:00', '14:00-16:00'),
-        ('16:00-18:00', '16:00-18:00'),
-    ]
+    def validate_max_two_days(value):
+        """
+        اعتبارسنجی سفارشی برای روزهای هفته
+        """
+        days = [d.strip() for d in value.split(',')]
+        
+        if len(days) > 2:
+            raise ValidationError('حداکثر 2 روز قابل انتخاب است')
+        
+
+        valid_days = [d[0] for d in Course.DAYS_OF_WEEK]
+        for day in days:
+            if day not in valid_days:
+                raise ValidationError(f'روز نامعتبر: {day}')
 
     class_date = models.CharField(
-        max_length=23,
-        help_text="یکی یا دو روز از شنبه تا چهارشنبه را انتخاب کنید. (مثال: Sat,Mon)",
-        verbose_name="روزهای برگزاری کلاس",
-        default="Sat"
+    max_length=23,
+    verbose_name="روزهای برگزاری کلاس",
+    help_text="حداکثر 2 روز را با کاما جدا کنید (مثال: Sat,Mon)",
+    validators=[validate_max_two_days]
     )
+
     class_time = models.CharField(
         max_length=11,
         choices=TIME_SLOTS,
         verbose_name="زمان برگزاری کلاس"
     )
+
 
     def check_prerequisites(self, student):
         return self.prerequisites.exclude(

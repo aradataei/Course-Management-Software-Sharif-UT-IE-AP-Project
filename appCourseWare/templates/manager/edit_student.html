@@ -69,8 +69,8 @@
                                 <label class="form-label">سال ورود</label>
                                 <select name="admission_year" class="form-select">
                                     {% for year in admission_years %}
-                                        <option value="{{ year.0 }}" {% if year.0 == student.admission_year %}selected{% endif %}>
-                                            {{ year.1 }}
+                                        <option value="{{ 'year' }}" {% if year == 'student.admission_year' %}selected{% endif %}>
+                                            {{ year }}
                                         </option>
                                     {% endfor %}
                                 </select>

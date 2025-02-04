@@ -20,7 +20,7 @@
                     <select name="student" class="form-select" required>
                         <option value="">-- لطفا دانشجو را انتخاب کنید --</option>
                         {% for student in students %}
-                        <option value="{{ student.id }}">{{ student.user.get_full_name }} - {{ student.student_id }}</option>
+                        <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name }} - {{ student.user.student_id }}</option>
                         {% endfor %}
                     </select>
                 </div>

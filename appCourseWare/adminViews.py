@@ -72,10 +72,13 @@ def student_edit_view(request, pk):
         except ValidationError as e:
             messages.error(request, f'خطا در اعتبارسنجی: {e}')
     
+    admission_years= ['1403','1402','1401','1400','1399','1398']
+
     majors = Major.objects.all()
     return render(request, 'manager/edit_student.html', {
         'student': student,
-        'majors': majors
+        'majors': majors,
+        'admission_years': admission_years
     })
 
 @staff_member_required
@@ -141,10 +144,16 @@ def professor_edit_view(request, pk):
     
     if request.method == 'POST':
         for field in get_model_fields(Professor):
-            if field in request.POST and field != 'instructor_id':
-                setattr(professor, field, request.POST.get(field))
+            if field in request.POST and field != 'professor.pk':
+                if field == 'department':  # Check if field is department
+                    department_id = request.POST.get(field)
+                    department_instance = Department.objects.get(pk=department_id)
+                    setattr(professor, field, department_instance)
+                else:
+                    setattr(professor, field, request.POST.get(field))
+
         professor.save()
-        messages.success(request, 'اطلاعات استاد با موفقیت بروزرسانی شد')
+        messages.success(request, 'اطلاعات استاد با موفقیت بروز‌رسانی شد')
         return redirect('professor_list_view')
     
     departments = Department.objects.all()
@@ -329,115 +338,99 @@ def course_list_view(request):
 
 @staff_member_required
 def course_create_view(request):
-    if request.method == 'POST':
-        try:
-            # Main course data
-            course = Course.objects.create(
-                course_name=request.POST['course_name'],
-                course_code=request.POST['course_code'],
-                department_id=request.POST['department'],
-                professor_id=request.POST.get('professor'),
-                classroom_id=request.POST.get('classroom'),
-                capacity=request.POST['capacity'],
-                class_date=request.POST.get('class_date', ''),
-                class_time=request.POST.get('class_time', ''),
-                exam_time=request.POST['exam_time']
-            )
+    try:
+        departments = Department.objects.all()
+        professors = Professor.objects.all()
+        classrooms = Classroom.objects.all()
+        majors = Major.objects.all()
+        
+        if request.method == 'POST':
+            # دریافت تمامی فیلدهای مورد نیاز از مدل
+            course_data = {
+                'course_name': request.POST.get('course_name'),
+                'course_code': request.POST.get('course_code'),
+                'units': request.POST.get('units'),
+                'exam_time': request.POST.get('exam_time'),
+                'capacity': request.POST.get('capacity'),
+                'class_date': request.POST.get('class_date'),
+                'class_time': request.POST.get('class_time'),
+                'department_id': request.POST.get('department'),
+                'professor_id': request.POST.get('professor'),
+                'classroom_id': request.POST.get('classroom'),
+                'major_id': request.POST.get('major')
+            }
             
-            # Handle prerequisites and corequisites
-            prerequisites = request.POST.getlist('prerequisites')
-            corequisites = request.POST.getlist('corequisites')
+            # اعتبارسنجی فیلدهای ضروری
+            required_fields = ['course_name', 'units', 'department_id', 'professor_id', 'classroom_id']
+            if not all(course_data[field] for field in required_fields):
+                raise ValidationError("پر کردن فیلدهای ستاره‌دار الزامی است")
             
-            Prerequisite.objects.bulk_create([
-                Prerequisite(course=course, prerequisite_id=p_id) 
-                for p_id in prerequisites
-            ])
+            # ایجاد دوره با تمامی فیلدهای مرتبط
+            Course.objects.create(**course_data)
             
-            CoRequisite.objects.bulk_create([
-                CoRequisite(course=course, corequisite_id=c_id) 
-                for c_id in corequisites
-            ])
-            
-            messages.success(request, 'درس جدید با موفقیت ایجاد شد')
+            messages.success(request, 'دوره جدید با موفقیت ساخته شد')
             return redirect('course_list_view')
-            
-        except Exception as e:
-            messages.error(request, f'خطا در ایجاد درس: {str(e)}')
+        
+        return render(request, 'manager/create_course.html', {
+            'departments': departments,
+            'professors': professors,
+            'classrooms': classrooms,
+            'majors': majors
+        })
     
-    return render(request, 'manager/course_edit.html', {
-        'departments': Department.objects.all(),
-        'professors': Professor.objects.all(),
-        'classrooms': Classroom.objects.all(),
-        'all_courses': Course.objects.exclude(
-            course_code=request.POST.get('course_code')
-        )
-    })
+    except Exception as e:
+        messages.error(request, f'خطا در ایجاد دوره: {str(e)}')
+        return redirect('course_list_view')
 
 @staff_member_required
-def course_edit_view(request, pk=None):
-    course = get_object_or_404(Course, pk=pk) if pk else None
-    
-    if request.method == 'POST':
-        try:
-            # Update basic course info
-            course.course_name = request.POST['course_name']
-            course.department_id = request.POST['department']
-            course.professor_id = request.POST.get('professor')
-            course.classroom_id = request.POST.get('classroom')
-            course.capacity = request.POST['capacity']
-            course.class_date = request.POST.get('class_date', '')
-            course.class_time = request.POST.get('class_time', '')
-            course.exam_time = request.POST['exam_time']
-            course.full_clean()
+def course_edit_view(request, pk):
+    try:
+        course = get_object_or_404(Course, pk=pk)
+        departments = Department.objects.all()
+        professors = Professor.objects.all()
+        classrooms = Classroom.objects.all()
+        majors = Major.objects.all()
+        
+        if request.method == 'POST':
+            # دریافت و بروزرسانی تمامی فیلدها
+            update_data = {
+                'course_name': request.POST.get('course_name'),
+                'course_code': request.POST.get('course_code'),
+                'units': request.POST.get('units'),
+                'exam_time': request.POST.get('exam_time'),
+                'capacity': request.POST.get('capacity'),
+                'class_date': request.POST.get('class_date'),
+                'class_time': request.POST.get('class_time'),
+                'department_id': request.POST.get('department'),
+                'professor_id': request.POST.get('professor'),
+                'classroom_id': request.POST.get('classroom'),
+                'major_id': request.POST.get('major')
+            }
+            
+            # اعتبارسنجی فیلدهای ضروری
+            required_fields = ['course_name', 'units', 'department_id', 'professor_id', 'classroom_id']
+            if not all(update_data[field] for field in required_fields):
+                raise ValidationError("پر کردن فیلدهای ستاره‌دار الزامی است")
+            
+            # بروزرسانی شیء دوره
+            for key, value in update_data.items():
+                setattr(course, key, value)
             course.save()
             
-            # Update prerequisites
-            current_prerequisites = set(course.prerequisites.values_list('id', flat=True))
-            new_prerequisites = set(map(int, request.POST.getlist('prerequisites')))
-            
-            # Remove obsolete prerequisites
-            Prerequisite.objects.filter(
-                course=course, 
-                prerequisite_id__in=current_prerequisites - new_prerequisites
-            ).delete()
-            
-            # Add new prerequisites
-            new_prereq_ids = new_prerequisites - current_prerequisites
-            Prerequisite.objects.bulk_create([
-                Prerequisite(course=course, prerequisite_id=p_id) 
-                for p_id in new_prereq_ids
-            ])
-            
-            # Update corequisites (same logic as prerequisites)
-            current_corequisites = set(course.corequisites.values_list('id', flat=True))
-            new_corequisites = set(map(int, request.POST.getlist('corequisites')))
-            
-            CoRequisite.objects.filter(
-                course=course, 
-                corequisite_id__in=current_corequisites - new_corequisites
-            ).delete()
-            
-            new_coreq_ids = new_corequisites - current_corequisites
-            CoRequisite.objects.bulk_create([
-                CoRequisite(course=course, corequisite_id=c_id) 
-                for c_id in new_coreq_ids
-            ])
-            
-            messages.success(request, 'تغییرات درس با موفقیت ذخیره شد')
+            messages.success(request, 'تغییرات دوره با موفقیت ذخیره شد')
             return redirect('course_list_view')
-            
-        except Exception as e:
-            messages.error(request, f'خطا در ویرایش درس: {str(e)}')
+        
+        return render(request, 'manager/edit_course.html', {
+            'course': course,
+            'departments': departments,
+            'professors': professors,
+            'classrooms': classrooms,
+            'majors': majors
+        })
     
-    return render(request, 'manager/course_edit.html', {
-        'course': course,
-        'departments': Department.objects.all(),
-        'professors': Professor.objects.all(),
-        'classrooms': Classroom.objects.all(),
-        'all_courses': Course.objects.exclude(id=course.id) if course else Course.objects.all(),
-        'selected_prerequisites': course.prerequisites.values_list('id', flat=True) if course else [],
-        'selected_corequisites': course.corequisites.values_list('id', flat=True) if course else []
-    })
+    except Exception as e:
+        messages.error(request, f'خطا در ویرایش دوره: {str(e)}')
+        return redirect('course_list_view')
 
 @staff_member_required
 def course_delete_view(request, pk):
