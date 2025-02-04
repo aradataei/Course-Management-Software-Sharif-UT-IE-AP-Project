@@ -151,11 +151,17 @@ class Student(models.Model):
 
 
 class Department(models.Model):
-    department_name = models.CharField(max_length=100)
-
+    department_name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='نام دپارتمان',
+        error_messages={
+            'unique': 'این نام دپارتمان قبلاً ثبت شده است'
+        }
+    )
+    
     def __str__(self):
         return self.department_name
-
 
 
 

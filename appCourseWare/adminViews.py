@@ -94,6 +94,45 @@ def professor_list_view(request):
     return render(request, 'manager/professor_list.html', {'professors': professors})
 
 @staff_member_required
+def professor_create_view(request):
+    try:
+        departments = Department.objects.all()
+        if request.method == 'POST':
+            # Validate required fields
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            email = request.POST.get('email')
+            department_id = request.POST.get('department')
+
+            if not all([first_name, last_name, email, department_id]):
+                raise ValidationError("لطفا تمام فیلدهای ضروری را پر کنید")
+
+            # Check email uniqueness
+            if Professor.objects.filter(email=email).exists():
+                raise ValidationError("این ایمیل قبلاً ثبت شده است")
+
+            department = Department.objects.get(pk=department_id)
+            
+            # Create professor
+            professor = Professor.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                department=department
+            )
+            
+            messages.success(request, 'استاد جدید با موفقیت ایجاد شد')
+            return redirect('professor_list_view')
+
+        return render(request, 'manager/create_professor.html', {
+            'departments': departments
+        })
+
+    except Exception as e:
+        messages.error(request, f'خطا در ایجاد استاد: {str(e)}')
+        return redirect('professor_list_view')
+
+@staff_member_required
 def professor_edit_view(request, pk):
     """ویرایش اطلاعات استاد"""
     professor = get_object_or_404(Professor, pk=pk)
@@ -150,11 +189,48 @@ def department_edit_view(request, pk=None):
     
     return render(request, 'manager/edit_department.html', {'department': department})
 
+@staff_member_required
+def department_delete_view(request, pk):
+    try:
+        department = Department.objects.get(pk=pk)
+        if request.method == 'POST':
+            department.delete()
+            messages.success(request, 'دپارتمان با موفقیت حذف شد')
+            return redirect('department_list_view')
+        return render(request, 'manager/confirm_delete.html', {
+            'object': department,
+            'title': 'حذف دپارتمان',
+            'back_url': reverse('department_list_view')
+        })
+    except Department.DoesNotExist:
+        messages.error(request, 'دپارتمان مورد نظر یافت نشد')
+        return redirect('department_list_view')
+    
 # ------------------------ مدیریت کلاس‌ها --------------------------
 @staff_member_required
 def classroom_list_view(request):
     classrooms = Classroom.objects.select_related('department').all()
     return render(request, 'manager/classroom_list.html', {'classrooms': classrooms})
+
+@staff_member_required
+def classroom_create_view(request):
+    if request.method == 'POST':
+        classroom_name = request.POST.get('classroom_name')
+        department_id = request.POST.get('department_id')
+        try:
+            classroom = Classroom.objects.create(
+                classroom_name=classroom_name,
+                department_id=department_id
+            )
+            messages.success(request, 'کلاس با موفقیت ایجاد شد.')
+            return redirect('classroom_list_view')
+        except Exception as e:
+            messages.error(request, f'خطا در ایجاد کلاس: {str(e)}')
+    departments = Department.objects.all()
+    return render(request, 'manager/edit_classroom.html', {
+        'departments': departments,
+        'classroom': None
+    })
 
 @staff_member_required
 def classroom_edit_view(request, pk=None):
@@ -186,6 +262,20 @@ def classroom_edit_view(request, pk=None):
         'classroom': classroom,
         'departments': departments
     })
+
+@staff_member_required
+def classroom_delete_view(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+    if request.method == 'POST':
+        try:
+            classroom.delete()
+            messages.success(request, 'کلاس با موفقیت حذف شد.')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف کلاس: {str(e)}')
+        return redirect('classroom_list_view')
+    
+    # اگر متد POST نبود یعنی کاربر هنوز فرم تایید را نفرستاده
+    return render(request, 'manager/confirm_delete.html', {'object': classroom, 'type': 'کلاس'})
 
 # ------------------------ مدیریت پیشنیازها --------------------------
 @staff_member_required

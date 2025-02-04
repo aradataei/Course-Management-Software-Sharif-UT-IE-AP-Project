@@ -3,6 +3,13 @@
 
 {% block content %}
 <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'professor_create_view' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>ایجاد استاد جدید
+        </a>
+    </div>
+
+<div class="container">
     <h2 class="mb-4">مدیریت اساتید</h2>
 
     <div class="table-responsive">
@@ -52,4 +59,5 @@
         </table>
     </div>
 </div>
+
 {% endblock %}
