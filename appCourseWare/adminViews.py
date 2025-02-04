@@ -3,6 +3,8 @@ from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db import transaction
+from django.db.models import Sum
 from .models import (
     Course, Student, StudentCourse, Professor,
     Department, Classroom, CustomUser, UserLevel,
@@ -448,3 +450,62 @@ def course_delete_view(request, pk):
             messages.error(request, f'خطا در حذف درس: {str(e)}')
         return redirect('course_list_view')
     return render(request, 'manager/confirm_delete.html', {'object': course})
+
+
+@staff_member_required
+def enroll_student_view(request):
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                student_id = request.POST.get('student')
+                course_ids = request.POST.getlist('courses')
+                
+                student = Student.objects.get(pk=student_id)
+                courses = Course.objects.filter(pk__in=course_ids)
+                
+                # محاسبه مجموع واحدهای انتخابی
+                total_units = courses.aggregate(total=Sum('units'))['total'] or 0
+                current_units = StudentCourse.objects.filter(student=student).aggregate(total=Sum('course__units'))['total'] or 0
+                
+                # اعتبارسنجی حداکثر واحدها
+                if (current_units + total_units) > student.max_units:
+                    messages.error(request, f'مجموع واحدها از حد مجاز ({student.max_units}) بیشتر میشود!')
+                    return redirect('enroll_student')
+                
+                # اعتبارسنجی پیش‌نیازها
+                for course in courses:
+                    prerequisites = course.prerequisites.all()
+                    for prereq in prerequisites:
+                        if not StudentCourse.objects.filter(student=student, course=prereq, status='completed').exists():
+                            messages.error(request, f'درس {prereq.course_name} به عنوان پیش‌نیاز {course.course_name} گذرانده نشده است!')
+                            return redirect('enroll_student')
+                
+                # اعتبارسنجی همنیازها
+                for course in courses:
+                    coreqs = course.corequisites.all()
+                    for coreq in coreqs:
+                        if coreq not in courses:
+                            messages.error(request, f'درس {coreq.course_name} باید همزمان با {course.course_name} اخذ شود!')
+                            return redirect('enroll_student')
+                
+                # ثبت نهایی دروس
+                for course in courses:
+                    StudentCourse.objects.create(
+                        student=student,
+                        course=course,
+                        status='enrolled'
+                    )
+                
+                messages.success(request, 'اخذ درس با موفقیت انجام شد!')
+                return redirect('student_list_view')
+        
+        except Exception as e:
+            messages.error(request, f'خطا در ثبت اطلاعات: {str(e)}')
+            return redirect('enroll_student')
+
+    students = Student.objects.all()
+    courses = Course.objects.all()
+    return render(request, 'manager/enroll_student.html', {
+        'students': students,
+        'courses': courses
+    })

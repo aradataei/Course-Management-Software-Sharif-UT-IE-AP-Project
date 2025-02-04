@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
-
+from django.db.models import Sum
 
 student_id_validator = RegexValidator(
     regex=r'^\d{9}$',
@@ -145,6 +145,14 @@ class Student(models.Model):
             if not re.match(pattern, self.phone_number):
                 raise ValidationError({'phone_number': 'شماره تلفن باید به فرم +98XXXXXXXXXX باشد.'})
     
+    def get_current_units(self):
+        return self.studentcourse_set.aggregate(
+            total=Sum('course__units')
+        )['total'] or 0
+
+    def can_enroll(self, new_units):
+        return (self.get_current_units() + new_units) <= self.max_units
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
@@ -223,6 +231,13 @@ class Course(models.Model):
         choices=TIME_SLOTS,
         verbose_name="زمان برگزاری کلاس"
     )
+
+    def check_prerequisites(self, student):
+        return self.prerequisites.exclude(
+            pk__in=student.studentcourse_set.filter(
+                status='completed'
+            ).values_list('course__pk', flat=True)
+        ).exists()
 
     def save(self, *args, **kwargs):
         # اگر دوره جدید است، remaining_capacity را برابر با capacity قرار بده

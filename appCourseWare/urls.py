@@ -39,4 +39,5 @@ urlpatterns = [
     path('manager/courses/delete/<int:pk>/', adminViews.course_delete_view, name='course_delete_view'),
     path('manager/courses/<int:course_id>/prerequisites/', adminViews.manage_prerequisites_view, name='manage_prerequisites'),
     
+    path('manager/enroll-student/', adminViews.enroll_student_view, name='enroll_student'),
 ]
