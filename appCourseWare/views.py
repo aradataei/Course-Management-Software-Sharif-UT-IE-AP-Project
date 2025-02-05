@@ -3,10 +3,8 @@ from django.contrib.auth import login
 from .forms import CustomUserCreationForm, StudentProfileForm
 from django.contrib.auth.views import LogoutView, LoginView
 
-
 class CustomLogoutView(LogoutView):
     next_page = 'login' 
-
 
 def register(request):
     if request.method == 'POST':
@@ -14,15 +12,15 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            # به جای ایجاد مستقیم Student، کاربر را به صفحه ایجاد Student هدایت می‌کنیم
+            # Instead of creating a Student immediately, the user is redirected to create the Student profile page.
             return redirect('create_student_profile')
     else:
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
-# تابع جدید برای ایجاد پروفایل Student
+# Function to create a Student profile
 def create_student_profile(request):
-    # اگر کاربر قبلاً Student داشته باشد، به صفحه اصلی هدایت می‌شود
+    # If the user already has a Student profile, redirect to the home page.
     if hasattr(request.user, 'student'):
         return redirect('home')
         
@@ -43,11 +41,20 @@ class CustomLoginView(LoginView):
     redirect_authenticated_user = True
     
     def form_valid(self, form):
-        remember_me = self.request.POST.get('remember_me')
-        if not remember_me:
-            self.request.session.set_expiry(0)
-        return super().form_valid(form)
-    
+        # Call the parent form_valid to perform the login
+        response = super().form_valid(form)
+        # Get the authenticated user from the form instance
+        user = self.request.user
+        
+        # Check if the user is either staff or superuser (admin)
+        if user.is_staff or user.is_superuser:
+            # Redirect to the course_list_view for admin/staff members.
+            return redirect('course_list_view')
+        else:
+            # Otherwise, redirect to the home page for normal members.
+            return redirect('home')
 
+        # Note: The returned 'response' isn't used here because we're overriding the redirect.
+        
 def home(request):
     pass
