@@ -68,7 +68,7 @@ def filter_courses(request):
     # فیلتر دپارتمان
     department = request.GET.get('department')
     if department and department != 'all':
-        courses = courses.filter(department__name=department)
+        courses = courses.filter(department__department_name=department)
     
     # جستجو بر اساس کد یا نام درس
     search = request.GET.get('search')

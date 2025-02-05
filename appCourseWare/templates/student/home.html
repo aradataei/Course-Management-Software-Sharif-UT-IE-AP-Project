@@ -33,15 +33,8 @@
         <div class="container">
             <a class="navbar-brand" href="#">سامانه ثبت نام دروس</a>
             <div class="d-flex align-items-center">
-                <span class="text-white me-3">واحد باقیمانده: {{ remaining_units }}</span>
-                <div class="progress" style="width: 200px; height: 25px">
-                    <div class="progress-bar" role="progressbar" 
-                         style="width: {{ selected_units|add:current_units }}%"
-                         aria-valuenow="{{ selected_units|add:current_units }}" 
-                         aria-valuemin="0" 
-                         aria-valuemax="{{ max_units }}">
-                        {{ selected_units|add:current_units }} از {{ max_units }}
-                    </div>
+                <span class="text-white me-3">واحد باقیمانده: {{ remaining_units }} از {{ max_units }}</span>
+                         
                 </div>
             </div>
         </div>
@@ -75,9 +68,9 @@
                                 <select name="department" class="form-select">
                                     <option value="all">همه دپارتمان‌ها</option>
                                     {% for department in departments %}
-                                    <option value="{{ department.name }}" 
-                                        {% if department.name == request.GET.department %}selected{% endif %}>
-                                        {{ department.name }}
+                                    <option value="{{ department.department_name }}" 
+                                        {% if department.department_name == request.GET.department %}selected{% endif %}>
+                                        {{ department.department_name }}
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -135,18 +128,218 @@
                     {% for course in courses %}
                     <div class="col">
                         <div class="card course-card h-100 
-                            {% if not check_prerequisites %}prerequisite-warning{% endif %}">
+                            {% if not course.check_prerequisites %}prerequisite-warning{% endif %}
+                            {% if course.remaining_capacity == 0 %}bg-danger text-white{% endif %}">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="card-title mb-0">{{ course.course_name }}</h5>
+                                <p class="mb-0 small">{{ course.department.name }}</p>
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-6">
                                         <p class="mb-1"><strong>کد دوره:</strong> {{ course.course_code }}</p>
                                         <p class="mb-1"><strong>واحد:</strong> {{ course.units }}</p>
-                                        <p class="mb-1"><strong>ظرفیت:</strong> {{ course.remaining_capacity }}</p>
+                                        <p class="mb-1"><strong>ظرفیت:</strong> 
+                                            <span class="badge {% if course.remaining_capacity > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ course.remaining_capacity }}/{{ course.capacity }}
+                                            </span>
+                                        </p>
+                                        <p class="mb-1"><strong>استاد:</strong> {{ course.professor.first_name }} {{course.professor.last_name}}</p>
+                                        <p class="mb-1"><strong>کلاس:</strong> {{ course.classroom.classroom_name }}</p>
                                     </div>
                                     <div class="col-6">
                                         <p class="mb-1"><strong>زمان کلاس:</strong> {{ course.class_time }}</p>
                                         <p class="mb-1"><strong>روزهای برگزاری:</strong> {{ course.class_date }}</p>
-                                        <p class="mb-1"><strong>پ
+                                        <p class="mb-1"><strong>پیش‌نیازها:</strong>
+                                            {% for pre in course.prerequisites.all %}
+                                            <span class="badge bg-warning text-dark">{{ pre.course_name }}</span>
+                                            {% empty %}
+                                            <span class="text-muted">ندارد</span>
+                                            {% endfor %}
+                                        </p>
+                                        <p class="mb-1"><strong>هم‌نیازها:</strong>
+                                            {% for co in course.corequisites.all %}
+                                            <span class="badge bg-info">{{ co.course_name }}</span>
+                                            {% empty %}
+                                            <span class="text-muted">ندارد</span>
+                                            {% endfor %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <form method="post" class="d-flex justify-content-between">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="course_id" value="{{ course.id }}">
+                                    
+                                    {% if course in selected_courses %}
+                                        <button type="submit" name="remove_course" class="btn btn-danger btn-sm">
+                                            حذف از سبد
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" name="add_course" 
+                                                class="btn btn-success" btn-sm {% if course.remaining_capacity == 0 %}disabled{% endif %}>
+                                                {% comment %} {% if not course.check_prerequisites %}پیش‌نیازها تکمیل نشده"{% endif %} {% endcomment %}
+                                                {% if course.remaining_capacity == 0 %}ظرفیت تکمیل شده"{% endif %}>
+                                            افزودن به سبد
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <a href="#" class="btn btn-outline-primary btn-sm" 
+                                       data-bs-toggle="modal" data-bs-target="#courseModal{{ course.id }}">
+                                        جزئیات بیشتر
+                                    </a>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Modal برای نمایش اطلاعات کامل -->
+                    <div class="modal fade" id="courseModal{{ course.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title">{{ course.course_name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <strong>کد دوره:</strong> {{ course.course_code }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>واحدها:</strong> {{ course.units }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>زمان امتحان:</strong> {{ course.exam_time }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>محدودیت رشته:</strong> {{ course.major.name|default:"ندارد" }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>حداقل GPA:</strong> {{ course.min_gpa|default:"ندارد" }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="alert alert-warning">درسی با این مشخصات یافت نشد</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // مدیریت رویدادهای افزودن/حذف دوره
+                const handleCourseAction = async (formElement, successMessage, errorMessage) => {
+                    try {
+                        const formData = new FormData(formElement);
+                        const response = await fetch(window.location.href, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: formData
+                        });
+            
+                        const data = await response.json();
+                        if (data.success) {
+                            // به روزرسانی بخش‌های مختلف صفحه
+                            updateCourseList(data);
+                            updateBasket(data);
+                            updateUnitCounters(data);
+                            showToast(successMessage, 'success');
+                        } else {
+                            showToast(data.error || errorMessage, 'danger');
+                        }
+                    } catch (error) {
+                        showToast('خطا در ارتباط با سرور', 'danger');
+                    }
+                };
+            
+                // به روزرسانی لیست دوره‌ها
+                const updateCourseList = (data) => {
+                    document.querySelectorAll('.course-card').forEach(card => {
+                        const courseId = card.dataset.courseId;
+                        const addButton = card.querySelector('.add-btn');
+                        
+                        // به روزرسانی وضعیت ظرفیت
+                        if (data.remaining_capacity[courseId] <= 0) {
+                            addButton.disabled = true;
+                            card.classList.add('course-full');
+                        }
+            
+                        // به روزرسانی وضعیت پیشنیازها
+                        if (data.prerequisite_warnings.includes(courseId)) {
+                            card.classList.add('prerequisite-warning');
+                        }
+                    });
+                };
+            
+                // به روزرسانی سبد خرید
+                const updateBasket = (data) => {
+                    const basket = document.getElementById('selected-courses-list');
+                    basket.innerHTML = data.selected_courses.map(course => `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            ${course.course_name}
+                            <form class="remove-form">
+                                <input type="hidden" name="course_id" value="${course.id}">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    حذف
+                                </button>
+                            </form>
+                        </li>
+                    `).join('');
+                };
+            
+                // به روزرسانی شمارنده واحدها
+                const updateUnitCounters = (data) => {
+                    document.getElementById('remaining-units').textContent = data.remaining_units;
+                    document.getElementById('selected-units').textContent = data.selected_units;
+                    document.getElementById('current-units').textContent = data.current_units;
+                };
+            
+                // نمایش اعلان
+                const showToast = (message, type) => {
+                    const toastContainer = document.getElementById('toast-container');
+                    const toast = document.createElement('div');
+                    toast.className = `toast align-items-center text-bg-${type} border-0`;
+                    toast.innerHTML = `
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    `;
+                    toastContainer.appendChild(toast);
+                    new bootstrap.Toast(toast).show();
+                };
+            
+                // مدیریت کلیک روی دکمه‌های افزودن/حذف
+                document.body.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    if (e.target.matches('.add-form, .remove-form')) {
+                        const successMessage = e.target.matches('.add-form') ? 
+                            'دوره با موفقیت اضافه شد' : 'دوره با موفقیت حذف شد';
+                        const errorMessage = e.target.matches('.add-form') ? 
+                            'خطا در افزودن دوره' : 'خطا در حذف دوره';
+                        handleCourseAction(e.target, successMessage, errorMessage);
+                    }
+                });
+            
+                // مدیریت انتخاب دپارتمان و جستجو
+                const searchForm = document.getElementById('search-form');
+                searchForm.addEventListener('input', (e) => {
+                    const formData = new FormData(searchForm);
+                    const params = new URLSearchParams(formData);
+                    window.location.search = params.toString();
+                });
+
+        </script>
+</body>
