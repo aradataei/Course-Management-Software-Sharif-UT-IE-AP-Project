@@ -289,35 +289,6 @@ def classroom_delete_view(request, pk):
     # اگر متد POST نبود یعنی کاربر هنوز فرم تایید را نفرستاده
     return render(request, 'manager/confirm_delete.html', {'object': classroom, 'type': 'کلاس'})
 
-# ------------------------ مدیریت پیشنیازها --------------------------
-@staff_member_required
-def manage_prerequisites_view(request, course_id):
-    """مدیریت پیشنیازها و همنیازهای یک درس"""
-    course = get_object_or_404(Course, pk=course_id)
-    all_courses = Course.objects.exclude(pk=course_id)
-    
-    if request.method == 'POST':
-        # مدیریت پیشنیازها
-        prerequisite_ids = request.POST.getlist('prerequisites')
-        for pid in prerequisite_ids:
-            prereq = get_object_or_404(Course, pk=pid)
-            Prerequisite.objects.get_or_create(course=course, required_course=prereq)
-        
-        # مدیریت همنیازها
-        corequisite_ids = request.POST.getlist('corequisites')
-        for cid in corequisite_ids:
-            coreq = get_object_or_404(Course, pk=cid)
-            CoRequisite.objects.get_or_create(course=course, required_course=coreq)
-        
-        messages.success(request, 'وابستگی‌ها با موفقیت بروزرسانی شدند')
-        return redirect('course_detail_view', pk=course_id)
-    
-    return render(request, 'manager/manage_dependencies.html', {
-        'course': course,
-        'all_courses': all_courses
-    })
-
-
 @staff_member_required
 def course_list_view(request):
     courses = Course.objects.select_related(
@@ -375,6 +346,7 @@ def course_create_view(request):
             'departments': departments,
             'professors': professors,
             'classrooms': classrooms,
+            'time_slots': Course.TIME_SLOTS, # اضافه کردن این خط
             'majors': majors
         })
     
@@ -425,6 +397,7 @@ def course_edit_view(request, pk):
             'departments': departments,
             'professors': professors,
             'classrooms': classrooms,
+            'time_slots': Course.TIME_SLOTS, # اضافه کردن این خط
             'majors': majors
         })
     
@@ -502,3 +475,16 @@ def enroll_student_view(request):
         'students': students,
         'courses': courses
     })
+
+@staff_member_required
+def major_list_view(request):
+    majors = Major.objects.all().order_by('major_name')
+    context = {
+        'majors': majors,
+        'page_title': 'مدیریت رشته‌های تحصیلی',
+        'active_menu': 'academic-management'
+    }
+    return render(request, 'manager/major_list.html', context)
+
+def major_edit_view(request, pk):
+    pass

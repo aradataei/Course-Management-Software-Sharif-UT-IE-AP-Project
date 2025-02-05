@@ -37,7 +37,10 @@ urlpatterns = [
     path('manager/courses/create/', adminViews.course_create_view, name='course_create_view'),
     path('manager/courses/edit/<int:pk>/', adminViews.course_edit_view, name='course_edit_view'),
     path('manager/courses/delete/<int:pk>/', adminViews.course_delete_view, name='course_delete_view'),
-    path('manager/courses/<int:course_id>/prerequisites/', adminViews.manage_prerequisites_view, name='manage_prerequisites'),
     
     path('manager/enroll-student/', adminViews.enroll_student_view, name='enroll_student'),
+
+    path('manager/majors/', adminViews.major_list_view, name='major_list_view'),
+    path('manager/majors/edit/<int:pk>/', adminViews.major_edit_view, name='major_edit_view'),
+
 ]

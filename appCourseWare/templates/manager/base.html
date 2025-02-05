@@ -81,7 +81,15 @@
                                 <li><a class="dropdown-item" href="{% url 'classroom_list_view' %}">
                                     <i class="fas fa-chalkboard"></i> مدیریت کلاس‌ها
                                 </a></li>
-
+                                        <!-- لینک جدید -->
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'major_list_view' %}">
+                                                <i class="fas fa-graduation-cap me-2"></i>
+                                                مدیریت رشته‌ها
+                                                <span class="badge bg-primary float-start">{{ Major.objects.count }}</span>
+                                            </a>
+                                        </li>
+            
                                 {% comment %} </a></li>
                                 <li><a class="dropdown-item" href="{% url 'manage_prerequisites' %}">
                                     <i class="fas fa-link"></i> مدیریت پیش‌نیازها

@@ -1,11 +1,11 @@
 {% extends 'manager/base.html' %}
-{% load static humanize %}
+{% load static %}
 
 {% block content %}
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">مدیریت جامع رشته‌های تحصیلی</h2>
-        <a href="{% url 'major_edit_view' %}" class="btn btn-success">
+        {% comment %} <a href="{% url 'major_edit_view' major.pk %}" class="btn btn-success"> {% endcomment %}
             <i class="fas fa-plus-circle"></i> ایجاد رشته جدید
         </a>
     </div>
@@ -30,10 +30,10 @@
                         <div class="bg-success text-white rounded-circle p-3">
                             <i class="fas fa-users fa-2x"></i>
                         </div>
-                        <div class="ms-3">
+                        {% comment %} <div class="ms-3">
                             <h6 class="mb-0">دانشجویان فعال</h6>
                             <span class="h4">{{ total_students|intcomma }}</span>
-                        </div>
+                        </div> {% endcomment %}
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
@@ -131,7 +131,7 @@
                                             aria-valuemax="100">
                                         </div>
                                     </div>
-                                    <span>{{ major.student_set.count|intcomma }}</span>
+                                    {% comment %} <span>{{ major.student_set.count|intcomma }}</span> {% endcomment %}
                                 </div>
                             </td>
                             <td>
@@ -160,18 +160,18 @@
                                        title="ویرایش">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="{% url 'major_delete_view' major.pk %}" 
+                                    {% comment %} <a href="{% url 'major_delete_view' major.pk %}" 
                                        class="btn btn-icon btn-sm btn-danger"
                                        data-bs-toggle="tooltip" 
                                        title="حذف">
                                         <i class="fas fa-trash"></i>
-                                    </a>
-                                    <a href="{% url 'major_detail_view' major.pk %}" 
+                                    </a> {% endcomment %}
+                                    {% comment %} <a href="{% url 'major_detail_view' major.pk %}" 
                                        class="btn btn-icon btn-sm btn-info"
                                        data-bs-toggle="tooltip" 
                                        title="جزئیات">
                                         <i class="fas fa-info-circle"></i>
-                                    </a>
+                                    </a> {% endcomment %}
                                 </div>
                             </td>
                         </tr>

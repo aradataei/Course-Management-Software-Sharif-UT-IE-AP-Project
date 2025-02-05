@@ -138,16 +138,18 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="class_time" class="form-label">
-                                ساعت برگزاری
-                            </label>
-                            <input type="time" id="class_time" name="class_time" 
-                                   class="form-control">
+                    <div class="col-md-6 mb-3">
+                        <label for="class_time" class="form-label">زمان برگزاری کلاس</label>
+                        <select class="form-select" id="class_time" name="class_time" required>
+                            <option value="" selected disabled>لطفا بازه زمانی را انتخاب کنید</option>
+                            {% for value, label in time_slots %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text text-danger">
+                            انتخاب زمان کلاس الزامی است
                         </div>
-                    </div>
-                    
+                    </div>                    
                                         <!-- افزودن این بخش بعد از فیلد class_time -->
                     <div class="form-section">
                         <h4 class="section-title">زمان‌بندی کلاس</h4>
