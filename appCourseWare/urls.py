@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, adminViews
+from . import views, adminViews, studentViews
 
 urlpatterns = [
     # USER
@@ -49,5 +49,5 @@ urlpatterns = [
     path('manager/majors/', adminViews.major_list_view, name='major_list_view'),
     path('manager/majors/edit/<int:pk>/', adminViews.major_edit_view, name='major_edit_view'),
 
-    path('', views.home, name='home'),
+    path('home', studentViews.home_view, name='home_view'),
 ]

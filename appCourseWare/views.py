@@ -52,9 +52,7 @@ class CustomLoginView(LoginView):
             return redirect('course_list_view')
         else:
             # Otherwise, redirect to the home page for normal members.
-            return redirect('home')
+            return redirect('home_view')
 
         # Note: The returned 'response' isn't used here because we're overriding the redirect.
         
-def home(request):
-    pass
