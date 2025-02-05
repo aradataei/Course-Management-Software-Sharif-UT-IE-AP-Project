@@ -1,0 +1,82 @@
+{% load schedule_tags %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">  <!-- Set language and direction for Persian -->
+<head>
+    <meta charset="UTF-8">
+    <title>برنامه هفتگی</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Add custom styles here, if needed */
+        body {
+            font-family: Arial, sans-serif; /* Use a suitable Persian font */
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="text-center">صفحه برنامه هفتگی</h1>
+    <p class="text-center">این صفحه درسی که توسط دانشجو انتخاب شده را به صورت برنامه هفتگی نمایش می‌دهد.</p>
+
+    <div class="row justify-content-center my-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Display Student Information -->
+                    <h5 class="card-title">اطلاعات دانشجو</h5>
+                    <p><strong>شماره دانشجویی:</strong> {{ student.user.student_id }}</p>
+                    <p><strong>نام:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+                    <!-- Add other student details here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-light">
+                <tr>
+                    <th>زمان</th>
+                    <th>شنبه</th>
+                    <th>یکشنبه</th>
+                    <th>دوشنبه</th>
+                    <th>سه شنبه</th>
+                    <th>چهارشنبه</th>
+                    <!-- Add other days if your schedule includes them -->
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Create rows for each time slot (e.g., 8:00-10:00, 10:00-12:00, etc.) -->
+                {% for time_slot in time_slots %}  <!-- time_slots needs to be provided in context -->
+                <tr>
+                    <td>{{ time_slot }}</td>
+                    {% for day in days %}  <!-- days list should be provided in context -->
+                        <td>
+                        {% for course in schedule|get_item:day %}
+                            {% if course.class_time == time_slot %}
+                                <div>
+                                  {{ course.course_name }}<br>
+                                  ({{ course.course_code }})
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">هیچ برنامه‌ای برای نمایش وجود ندارد.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

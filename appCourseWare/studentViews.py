@@ -211,3 +211,69 @@ def sum_units(student, selected_ids):
     return Course.objects.filter(
         id__in=selected_ids
     ).aggregate(Sum('units'))['units__sum'] or 0
+
+
+
+
+@login_required
+def student_view(request):
+    # Mapping between English abbreviations and Persian full names
+    DAY_MAPPING = {
+        'Sat': 'شنبه',
+        'Sun': 'یکشنبه',
+        'Mon': 'دوشنبه',
+        'Tue': 'سه شنبه',
+        'Wed': 'چهارشنبه'
+    }
+
+    # Get student and related courses with optimized query
+    student = get_object_or_404(Student, user=request.user)
+    student_courses = StudentCourse.objects.filter(student=student).select_related('course')
+
+    # Initialize schedule structure with Persian days
+    persian_days = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه شنبه', 'چهارشنبه']
+    time_slots = ['8:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00']
+    
+    schedule = {day: {time: [] for time in time_slots} for day in persian_days}
+
+    # Populate schedule data
+    for sc in student_courses:
+        course = sc.course
+        try:
+            for english_day in course.class_date.split(','):
+                english_day = english_day.strip()
+                persian_day = DAY_MAPPING.get(english_day)
+                
+                if persian_day and persian_day in schedule:
+                    if course.class_time in schedule[persian_day]:
+                        schedule[persian_day][course.class_time].append({
+                            'course_name': course.course_name,
+                            'course_code': course.course_code,
+                            'classroom': course.classroom,
+                            'professor': course.professor
+                        })
+        except AttributeError:
+            continue
+
+    # Debugging output
+    print(f"Loaded {student_courses.count()} courses for {student}")
+    for day in persian_days:
+        print(f"{day} schedule:")
+        for time in time_slots:
+            courses = schedule[day][time]
+            if courses:
+                print(f"  {time}: {[c['course_name'] for c in courses]}")
+
+    context = {
+        'student': student,
+        'schedule': schedule,
+        'days': persian_days,
+        'time_slots': time_slots,
+        'student_info': {
+            'gpa': student.gpa,
+            'current_units': student.get_current_units(),
+            'max_units': student.max_units
+        }
+    }
+
+    return render(request, 'student/schedule.html', context)
