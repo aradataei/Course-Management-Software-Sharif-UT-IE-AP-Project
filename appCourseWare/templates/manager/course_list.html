@@ -1,42 +1,185 @@
-<!-- templates/admin/course_list.html -->
-{% extends 'admin/base.html' %}
+{% extends 'manager/base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container">
-    <h2>لیست دروس</h2>
-    
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">مدیریت دروس دانشگاهی</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'course_create_view' %}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> ایجاد درس جدید
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="fas fa-file-export"></i> خروجی
+            </button>
+        </div>
+    </div>
 
-    <a href="{% url 'course_edit_view' %}" class="btn btn-success mb-3">+ افزودن درس جدید</a>
+    <!-- فیلترهای پیشرفته -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <select name="department" class="form-select">
+                        <option value="">همه دپارتمان‌ها</option>
+                        {% for department in departments %}
+                        <option value="{{ department.department_name }}" 
+                            {% if department.department_name == request.GET.department %}selected{% endif %}>
+                            {{ department.department_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">همه وضعیت‌ها</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>فعال</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>غیرفعال</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="search" 
+                           placeholder="جستجو بر اساس نام یا کد درس" 
+                           value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> اعمال فیلتر
+                        </button>
+                        <a href="{% url 'course_list_view' %}" class="btn btn-outline-danger">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>نام درس</th>
-                <th>کد درس</th>
-                <th>واحد</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for course in courses %}
-            <tr>
-                <td>{{ course.course_name }}</td>
-                <td>{{ course.course_code }}</td>
-                <td>{{ course.credit }}</td>
-                <td>
-                    <a href="{% url 'course_edit_view' course.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
-                    <a href="{% url 'course_delete_view' course.pk %}" class="btn btn-danger btn-sm">حذف</a>
-                    <a href="{% url 'manage_prerequisites_view' course.pk %}" class="btn btn-info btn-sm">مدیریت وابستگی‌ها</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- جدول دروس -->
+    <div class="card border-dark">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>نام درس</th>
+                            <th>کد درس</th>
+                            <th>واحد</th>
+                            <th>دپارتمان</th>
+                            <th>استاد</th>
+                            <th>ظرفیت</th>
+                            <th>زمان کلاس</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr class="{% if course.status == 'inactive' %}table-secondary{% endif %}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-40px me-3">
+                                        <span class="symbol-label bg-light-primary">
+                                            <i class="fas fa-book-open fs-2 text-primary"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ course.course_name }}</div>
+                                        <div class="text-muted fs-7">{{ course.course_type }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ course.course_code }}</td>
+                            <td>{{ course.units }}</td>
+                            <td>{{ course.department.department_name }}</td>
+                            <td>
+                                {% if course.professor %}
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-35px me-3">
+                                        <img src="{{ course.professor.avatar.url }}" 
+                                             class="rounded-circle" alt="استاد">
+                                    </div>
+                                    <div>
+                                        {{ course.professor.first_name }}
+                                        {{ course.professor.last_name }}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">تعیین نشده</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress w-100px me-3" style="height: 20px;">
+                                        <div class="progress-bar bg-{{ course.capacity_status }}" 
+                                             role="progressbar" 
+                                             style="width: {{ course.get_capacity_percentage }}%">
+                                        </div>
+                                    </div>
+                                    <span>{{ course.remaining_capacity }}/{{ course.capacity }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold">{{ course.get_class_days_display }}</span>
+                                    <span class="text-muted fs-7">{{ course.get_class_time_display }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'course_edit_view' course.pk %}" 
+                                       class="btn btn-icon btn-sm btn-warning"
+                                       data-bs-toggle="tooltip" 
+                                       title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'course_delete_view' course.pk %}" 
+                                       class="btn btn-icon btn-sm btn-danger"
+                                       data-bs-toggle="tooltip" 
+                                       title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-icon btn-sm btn-info"
+                                       data-bs-toggle="tooltip" 
+                                       title="مشاهده جزئیات">
+                                        <i class="fas fa-info-circle"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال خروجی -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">گزینه‌های خروجی</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary w-100">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-danger w-100">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

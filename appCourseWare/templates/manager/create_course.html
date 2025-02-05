@@ -1,15 +1,15 @@
 {% extends 'manager/base.html' %}
 {% load static %}
 
-{% block title_page %}ویرایش دوره {{ course.course_name }}{% endblock %}
+{% block title_page %}ایجاد دوره جدید{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="card shadow-lg border-0">
-        <div class="card-header bg-warning text-dark">
+        <div class="card-header bg-primary text-white">
             <h4 class="mb-0">
-                <i class="fas fa-edit"></i>
-                فرم ویرایش دوره: {{ course.course_name }}
+                <i class="fas fa-book-medical"></i>
+                فرم ایجاد دوره جدید
             </h4>
         </div>
         
@@ -17,12 +17,12 @@
             <form method="post" class="rtl-form">
                 {% csrf_token %}
                 
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    تغییرات در این بخش مستقیماً بر روی سامانه آموزشی تأثیر می‌گذارد
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    فیلدهای ستاره‌دار (<span class="text-danger">*</span>) الزامی هستند
                 </div>
 
-                <!-- بخش اطلاعات پایه -->
+                <!-- Basic Information Section -->
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -32,8 +32,7 @@
                             </label>
                             <input type="text" id="course_name" name="course_name" 
                                    class="form-control" required
-                                   value="{{ course.course_name }}"
-                                   placeholder="مثال: ریاضیات مهندسی">
+                                   placeholder="مثال: برنامه‌نویسی پیشرفته">
                         </div>
                     </div>
                     
@@ -44,13 +43,12 @@
                             </label>
                             <input type="text" id="course_code" name="course_code"
                                    class="form-control"
-                                   value="{{ course.course_code|default_if_none:'' }}"
-                                   placeholder="مثال: MATH-101">
+                                   placeholder="مثال: CS-401">
                         </div>
                     </div>
                 </div>
 
-                <!-- بخش روابط و وابستگی‌ها -->
+                <!-- Relationships Section -->
                 <div class="row mb-4">
                     <div class="col-md-3">
                         <div class="form-group">
@@ -60,31 +58,29 @@
                             </label>
                             <select id="department" name="department" 
                                     class="form-select" required>
+                                <option value="">انتخاب دانشکده</option>
                                 {% for dept in departments %}
-                                <option value="{{ dept.id }}" 
-                                    {% if dept.id == course.department.id %}selected{% endif %}>
-                                    {{ dept.department_name }}
-                                </option>
+                                <option value="{{ dept.id }}">{{ dept.department_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
                     
                     <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="professor" class="form-label">
-                                    استاد مربوطه 
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <select id="professor" name="professor" 
-                                        class="form-select" required>
-                                    <option value="">انتخاب استاد</option>
-                                    {% for prof in professors %}
-                                    <option value="{{ prof.id }}">{{ prof.first_name }} {{ prof.last_name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label for="professor" class="form-label">
+                                استاد مربوطه 
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select id="professor" name="professor" 
+                                    class="form-select" required>
+                                <option value="">انتخاب استاد</option>
+                                {% for prof in professors %}
+                                <option value="{{ prof.id }}">{{ prof.first_name }} {{ prof.last_name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
+                    </div>
                     
                     <div class="col-md-3">
                         <div class="form-group">
@@ -94,11 +90,9 @@
                             </label>
                             <select id="classroom" name="classroom" 
                                     class="form-select" required>
+                                <option value="">انتخاب کلاس</option>
                                 {% for room in classrooms %}
-                                <option value="{{ room.id }}"
-                                    {% if room.id == course.classroom.id %}selected{% endif %}>
-                                    {{ room.classroom_name }}
-                                </option>
+                                <option value="{{ room.id }}">{{ room.classroom_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -110,19 +104,16 @@
                                 رشته مرتبط
                             </label>
                             <select id="major" name="major" class="form-select">
-                                <option value="">بدون مرتبط سازی</option>
+                                <option value="">انتخاب رشته</option>
                                 {% for m in majors %}
-                                <option value="{{ m.id }}"
-                                    {% if course.major and m.id == course.major.id %}selected{% endif %}>
-                                    {{ m.major_name }}
-                                </option>
+                                <option value="{{ m.id }}">{{ m.major_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- بخش زمان‌بندی و ظرفیت -->
+                <!-- Time and Capacity Section -->
                 <div class="row mb-4">
                     <div class="col-md-3">
                         <div class="form-group">
@@ -132,8 +123,7 @@
                             </label>
                             <input type="number" id="units" name="units" 
                                    class="form-control" min="1" max="4" 
-                                   required value="{{ course.units }}"
-                                   placeholder="مثال: 3">
+                                   required placeholder="مثال: 3">
                         </div>
                     </div>
                     
@@ -144,7 +134,6 @@
                             </label>
                             <input type="number" id="capacity" name="capacity" 
                                    class="form-control" min="1" 
-                                   value="{{ course.capacity|default_if_none:'' }}"
                                    placeholder="مثال: 30">
                         </div>
                     </div>
@@ -155,32 +144,29 @@
                                 ساعت برگزاری
                             </label>
                             <input type="time" id="class_time" name="class_time" 
-                                   class="form-control"
-                                   value="{{ course.class_time|time:'H:i' }}">
+                                   class="form-control">
                         </div>
                     </div>
                     
-                    <!-- افزودن این بخش بعد از فیلد class_time -->
-                <div class="form-section">
-                    <h4 class="section-title">زمان‌بندی کلاس</h4>
-                    <div class="form-group">
-                    <label for="class_date">روزهای برگزاری کلاس <span class="text-danger">*</span></label>
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        id="class_date" 
-                        name="class_date"
-                        value="{{ course.class_date }}"
-                        placeholder="مثال: Sat,Mon"
-                        required
-                    >
-                    <small class="form-text text-muted">
-                        روزهای معتبر: شنبه (Sat)، یکشنبه (Sun)، دوشنبه (Mon)، سه‌شنبه (Tue)، چهارشنبه (Wed)
-                    </small>
+                                        <!-- افزودن این بخش بعد از فیلد class_time -->
+                    <div class="form-section">
+                        <h4 class="section-title">زمان‌بندی کلاس</h4>
+                        <div class="form-group">
+                        <label for="class_date">روزهای برگزاری کلاس <span class="text-danger">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="class_date" 
+                            name="class_date"
+                            value="{{ course.class_date }}"
+                            placeholder="مثال: Sat,Mon"
+                            required
+                        >
+                        <small class="form-text text-muted">
+                            روزهای معتبر: شنبه (Sat)، یکشنبه (Sun)، دوشنبه (Mon)، سه‌شنبه (Tue)، چهارشنبه (Wed)
+                        </small>
+                        </div>
                     </div>
-                </div>
-
-
 
                     <div class="col-md-3">
                         <div class="form-group">
@@ -188,29 +174,22 @@
                                 زمان امتحان
                             </label>
                             <input type="datetime-local" id="exam_time" name="exam_time" 
-                                   class="form-control"
-                                   value="{{ course.exam_time|date:'Y-m-d\TH:i' }}">
+                                   class="form-control">
                         </div>
                     </div>
                 </div>
 
-                <!-- دکمه‌های اقدام -->
+                <!-- Action Buttons -->
                 <div class="d-flex justify-content-between mt-5">
-                    <a href="{% url 'course_list_view' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-right"></i>
-                        بازگشت به لیست
-                    </a>
+                    <button type="reset" class="btn btn-secondary">
+                        <i class="fas fa-eraser"></i>
+                        پاک کردن فرم
+                    </button>
                     
-                    <div class="action-buttons">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i>
-                            ذخیره تغییرات
-                        </button>
-                        <button type="reset" class="btn btn-outline-dark">
-                            <i class="fas fa-undo"></i>
-                            بازنشانی
-                        </button>
-                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i>
+                        ذخیره دوره
+                    </button>
                 </div>
             </form>
         </div>

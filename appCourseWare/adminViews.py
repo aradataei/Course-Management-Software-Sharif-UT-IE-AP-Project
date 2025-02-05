@@ -1,7 +1,10 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db import transaction
+from django.db.models import Sum
 from .models import (
     Course, Student, StudentCourse, Professor,
     Department, Classroom, CustomUser, UserLevel,
@@ -69,10 +72,13 @@ def student_edit_view(request, pk):
         except ValidationError as e:
             messages.error(request, f'خطا در اعتبارسنجی: {e}')
     
+    admission_years= ['1403','1402','1401','1400','1399','1398']
+
     majors = Major.objects.all()
     return render(request, 'manager/edit_student.html', {
         'student': student,
-        'majors': majors
+        'majors': majors,
+        'admission_years': admission_years
     })
 
 @staff_member_required
@@ -93,16 +99,61 @@ def professor_list_view(request):
     return render(request, 'manager/professor_list.html', {'professors': professors})
 
 @staff_member_required
+def professor_create_view(request):
+    try:
+        departments = Department.objects.all()
+        if request.method == 'POST':
+            # Validate required fields
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            email = request.POST.get('email')
+            department_id = request.POST.get('department')
+
+            if not all([first_name, last_name, email, department_id]):
+                raise ValidationError("لطفا تمام فیلدهای ضروری را پر کنید")
+
+            # Check email uniqueness
+            if Professor.objects.filter(email=email).exists():
+                raise ValidationError("این ایمیل قبلاً ثبت شده است")
+
+            department = Department.objects.get(pk=department_id)
+            
+            # Create professor
+            professor = Professor.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                department=department
+            )
+            
+            messages.success(request, 'استاد جدید با موفقیت ایجاد شد')
+            return redirect('professor_list_view')
+
+        return render(request, 'manager/create_professor.html', {
+            'departments': departments
+        })
+
+    except Exception as e:
+        messages.error(request, f'خطا در ایجاد استاد: {str(e)}')
+        return redirect('professor_list_view')
+
+@staff_member_required
 def professor_edit_view(request, pk):
     """ویرایش اطلاعات استاد"""
     professor = get_object_or_404(Professor, pk=pk)
     
     if request.method == 'POST':
         for field in get_model_fields(Professor):
-            if field in request.POST and field != 'instructor_id':
-                setattr(professor, field, request.POST.get(field))
+            if field in request.POST and field != 'professor.pk':
+                if field == 'department':  # Check if field is department
+                    department_id = request.POST.get(field)
+                    department_instance = Department.objects.get(pk=department_id)
+                    setattr(professor, field, department_instance)
+                else:
+                    setattr(professor, field, request.POST.get(field))
+
         professor.save()
-        messages.success(request, 'اطلاعات استاد با موفقیت بروزرسانی شد')
+        messages.success(request, 'اطلاعات استاد با موفقیت بروز‌رسانی شد')
         return redirect('professor_list_view')
     
     departments = Department.objects.all()
@@ -149,11 +200,49 @@ def department_edit_view(request, pk=None):
     
     return render(request, 'manager/edit_department.html', {'department': department})
 
+@staff_member_required
+def department_delete_view(request, pk):
+    try:
+        department = Department.objects.get(pk=pk)
+        if request.method == 'POST':
+            department.delete()
+            messages.success(request, 'دپارتمان با موفقیت حذف شد')
+            return redirect('department_list_view')
+        return render(request, 'manager/confirm_delete.html', {
+            'object': department,
+            'title': 'حذف دپارتمان',
+            'back_url': reverse('department_list_view')
+        })
+    except Department.DoesNotExist:
+        messages.error(request, 'دپارتمان مورد نظر یافت نشد')
+        return redirect('department_list_view')
+    
 # ------------------------ مدیریت کلاس‌ها --------------------------
 @staff_member_required
 def classroom_list_view(request):
     classrooms = Classroom.objects.select_related('department').all()
     return render(request, 'manager/classroom_list.html', {'classrooms': classrooms})
+
+@staff_member_required
+def classroom_create_view(request):
+    if request.method == 'POST':
+        classroom_name = request.POST.get('classroom_name')
+        department_id = request.POST.get('department_id')
+        try:
+            classroom = Classroom.objects.create(
+                classroom_name=classroom_name,
+                department_id=department_id
+            )
+            messages.success(request, 'کلاس با موفقیت ایجاد شد.')
+            return redirect('classroom_list_view')
+        except Exception as e:
+            messages.error(request, f'خطا در ایجاد کلاس: {str(e)}')
+    departments = Department.objects.all()
+    return render(request, 'manager/edit_classroom.html', {
+        'departments': departments,
+        'classroom': None
+    })
+
 
 @staff_member_required
 def classroom_edit_view(request, pk=None):
@@ -186,6 +275,20 @@ def classroom_edit_view(request, pk=None):
         'departments': departments
     })
 
+@staff_member_required
+def classroom_delete_view(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+    if request.method == 'POST':
+        try:
+            classroom.delete()
+            messages.success(request, 'کلاس با موفقیت حذف شد.')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف کلاس: {str(e)}')
+        return redirect('classroom_list_view')
+    
+    # اگر متد POST نبود یعنی کاربر هنوز فرم تایید را نفرستاده
+    return render(request, 'manager/confirm_delete.html', {'object': classroom, 'type': 'کلاس'})
+
 # ------------------------ مدیریت پیشنیازها --------------------------
 @staff_member_required
 def manage_prerequisites_view(request, course_id):
@@ -212,4 +315,190 @@ def manage_prerequisites_view(request, course_id):
     return render(request, 'manager/manage_dependencies.html', {
         'course': course,
         'all_courses': all_courses
+    })
+
+
+@staff_member_required
+def course_list_view(request):
+    courses = Course.objects.select_related(
+        'department', 'professor', 'classroom'
+    ).prefetch_related('prerequisites', 'corequisites').all()
+    
+    # Filtering logic
+    department_filter = request.GET.get('department')
+    if department_filter:
+        courses = courses.filter(department__department_name=department_filter)
+    
+    return render(request, 'manager/course_list.html', {
+        'courses': courses,
+        'departments': Department.objects.all(),
+        'classrooms': Classroom.objects.all(),
+        'professors': Professor.objects.all()
+    })
+
+@staff_member_required
+def course_create_view(request):
+    try:
+        departments = Department.objects.all()
+        professors = Professor.objects.all()
+        classrooms = Classroom.objects.all()
+        majors = Major.objects.all()
+        
+        if request.method == 'POST':
+            # دریافت تمامی فیلدهای مورد نیاز از مدل
+            course_data = {
+                'course_name': request.POST.get('course_name'),
+                'course_code': request.POST.get('course_code'),
+                'units': request.POST.get('units'),
+                'exam_time': request.POST.get('exam_time'),
+                'capacity': request.POST.get('capacity'),
+                'class_date': request.POST.get('class_date'),
+                'class_time': request.POST.get('class_time'),
+                'department_id': request.POST.get('department'),
+                'professor_id': request.POST.get('professor'),
+                'classroom_id': request.POST.get('classroom'),
+                'major_id': request.POST.get('major')
+            }
+            
+            # اعتبارسنجی فیلدهای ضروری
+            required_fields = ['course_name', 'units', 'department_id', 'professor_id', 'classroom_id']
+            if not all(course_data[field] for field in required_fields):
+                raise ValidationError("پر کردن فیلدهای ستاره‌دار الزامی است")
+            
+            # ایجاد دوره با تمامی فیلدهای مرتبط
+            Course.objects.create(**course_data)
+            
+            messages.success(request, 'دوره جدید با موفقیت ساخته شد')
+            return redirect('course_list_view')
+        
+        return render(request, 'manager/create_course.html', {
+            'departments': departments,
+            'professors': professors,
+            'classrooms': classrooms,
+            'majors': majors
+        })
+    
+    except Exception as e:
+        messages.error(request, f'خطا در ایجاد دوره: {str(e)}')
+        return redirect('course_list_view')
+
+@staff_member_required
+def course_edit_view(request, pk):
+    try:
+        course = get_object_or_404(Course, pk=pk)
+        departments = Department.objects.all()
+        professors = Professor.objects.all()
+        classrooms = Classroom.objects.all()
+        majors = Major.objects.all()
+        
+        if request.method == 'POST':
+            # دریافت و بروزرسانی تمامی فیلدها
+            update_data = {
+                'course_name': request.POST.get('course_name'),
+                'course_code': request.POST.get('course_code'),
+                'units': request.POST.get('units'),
+                'exam_time': request.POST.get('exam_time'),
+                'capacity': request.POST.get('capacity'),
+                'class_date': request.POST.get('class_date'),
+                'class_time': request.POST.get('class_time'),
+                'department_id': request.POST.get('department'),
+                'professor_id': request.POST.get('professor'),
+                'classroom_id': request.POST.get('classroom'),
+                'major_id': request.POST.get('major')
+            }
+            
+            # اعتبارسنجی فیلدهای ضروری
+            required_fields = ['course_name', 'units', 'department_id', 'professor_id', 'classroom_id']
+            if not all(update_data[field] for field in required_fields):
+                raise ValidationError("پر کردن فیلدهای ستاره‌دار الزامی است")
+            
+            # بروزرسانی شیء دوره
+            for key, value in update_data.items():
+                setattr(course, key, value)
+            course.save()
+            
+            messages.success(request, 'تغییرات دوره با موفقیت ذخیره شد')
+            return redirect('course_list_view')
+        
+        return render(request, 'manager/edit_course.html', {
+            'course': course,
+            'departments': departments,
+            'professors': professors,
+            'classrooms': classrooms,
+            'majors': majors
+        })
+    
+    except Exception as e:
+        messages.error(request, f'خطا در ویرایش دوره: {str(e)}')
+        return redirect('course_list_view')
+
+@staff_member_required
+def course_delete_view(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    if request.method == 'POST':
+        try:
+            course.delete()
+            messages.success(request, 'درس با موفقیت حذف شد')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف درس: {str(e)}')
+        return redirect('course_list_view')
+    return render(request, 'manager/confirm_delete.html', {'object': course})
+
+
+@staff_member_required
+def enroll_student_view(request):
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                student_id = request.POST.get('student')
+                course_ids = request.POST.getlist('courses')
+                
+                student = Student.objects.get(pk=student_id)
+                courses = Course.objects.filter(pk__in=course_ids)
+                
+                # محاسبه مجموع واحدهای انتخابی
+                total_units = courses.aggregate(total=Sum('units'))['total'] or 0
+                current_units = StudentCourse.objects.filter(student=student).aggregate(total=Sum('course__units'))['total'] or 0
+                
+                # اعتبارسنجی حداکثر واحدها
+                if (current_units + total_units) > student.max_units:
+                    messages.error(request, f'مجموع واحدها از حد مجاز ({student.max_units}) بیشتر میشود!')
+                    return redirect('enroll_student')
+                
+                # اعتبارسنجی پیش‌نیازها
+                for course in courses:
+                    prerequisites = course.prerequisites.all()
+                    for prereq in prerequisites:
+                        if not StudentCourse.objects.filter(student=student, course=prereq, status='completed').exists():
+                            messages.error(request, f'درس {prereq.course_name} به عنوان پیش‌نیاز {course.course_name} گذرانده نشده است!')
+                            return redirect('enroll_student')
+                
+                # اعتبارسنجی همنیازها
+                for course in courses:
+                    coreqs = course.corequisites.all()
+                    for coreq in coreqs:
+                        if coreq not in courses:
+                            messages.error(request, f'درس {coreq.course_name} باید همزمان با {course.course_name} اخذ شود!')
+                            return redirect('enroll_student')
+                
+                # ثبت نهایی دروس
+                for course in courses:
+                    StudentCourse.objects.create(
+                        student=student,
+                        course=course,
+                        status='enrolled'
+                    )
+                
+                messages.success(request, 'اخذ درس با موفقیت انجام شد!')
+                return redirect('student_list_view')
+        
+        except Exception as e:
+            messages.error(request, f'خطا در ثبت اطلاعات: {str(e)}')
+            return redirect('enroll_student')
+
+    students = Student.objects.all()
+    courses = Course.objects.all()
+    return render(request, 'manager/enroll_student.html', {
+        'students': students,
+        'courses': courses
     })

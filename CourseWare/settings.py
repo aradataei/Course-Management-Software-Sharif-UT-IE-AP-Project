@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'appCourseWare',
 ]
 
@@ -49,8 +50,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'CourseWare.wsgi.application'
 
 GRAPH_MODELS = {
-  'all_applications': True,
-  'group_models': True,
+    'app_labels': ["appCourseWare",],
+    'group_models': True,
+    'exclude_models': ["AbstractUser", "LogEntry"],
+    'arrow_shape': 'diamond',
+    'bgcolor': '#333333',
+    'color_code_degradation': True,
+    'disable_abstract_fields': False,
+    'hide_edge_labels': True,
+    'relation_fields': ["ForeignKey", "ManyToManyField"]
 }
 
 DATABASES = {

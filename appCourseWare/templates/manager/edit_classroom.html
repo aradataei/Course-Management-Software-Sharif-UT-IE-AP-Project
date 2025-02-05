@@ -1,0 +1,55 @@
+<!-- templates/manager/edit_classroom.html -->
+{% extends 'manager/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <!-- عنوان بسته به اینکه کاربر در حال ویرایش است یا ایجاد آیتم جدید -->
+    <h2>{% if classroom %}ویرایش کلاس{% else %}افزودن کلاس جدید{% endif %}</h2>
+
+    <!-- نمایش پیام‌ها (پیام موفقیت یا خطا) -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- فرم ارسال اطلاعات -->
+    <form method="post">
+        {% csrf_token %}
+        
+        <!-- فیلد نام کلاس -->
+        <div class="form-group">
+            <label for="classroom_name">نام کلاس</label>
+            <input 
+                type="text"
+                class="form-control"
+                id="classroom_name"
+                name="classroom_name"
+                value="{{ classroom.classroom_name|default_if_none:'' }}"
+                required
+            >
+        </div>
+
+        <!-- انتخاب دپارتمان -->
+        <div class="form-group">
+            <label for="department_id">دپارتمان</label>
+            <select class="form-control" id="department_id" name="department_id" required>
+                <option value="">-- انتخاب کنید --</option>
+                {% for department in departments %}
+                    <option 
+                        value="{{ department.pk }}"
+                        {% if classroom and classroom.department.pk == department.pk %}selected{% endif %}
+                    >
+                        {{ department.department_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- دکمه‌های فرم -->
+        <button type="submit" class="btn btn-primary">ذخیره</button>
+        <a href="{% url 'classroom_list_view' %}" class="btn btn-secondary">لغو</a>
+    </form>
+</div>
+{% endblock %}

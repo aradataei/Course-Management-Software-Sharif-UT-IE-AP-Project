@@ -1,18 +1,22 @@
-<!-- templates/admin/classroom_list.html -->
-{% extends 'admin/base.html' %}
+{% extends 'manager/base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container">
     <h2>لیست کلاس‌ها</h2>
-    
+
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
     {% endif %}
 
-    <a href="{% url 'classroom_edit_view' %}" class="btn btn-success mb-3">+ افزودن کلاس جدید</a>
+    <!-- دکمه افزودن کلاس جدید -->
+    <div class="mb-3">
+        <a href="{% url 'classroom_create_view' %}" class="btn btn-primary">
+            افزودن کلاس جدید
+        </a>
+    </div>
 
     <table class="table table-bordered">
         <thead>
@@ -28,7 +32,13 @@
                 <td>{{ classroom.classroom_name }}</td>
                 <td>{{ classroom.department.department_name }}</td>
                 <td>
+                    <!-- ویرایش -->
                     <a href="{% url 'classroom_edit_view' classroom.pk %}" class="btn btn-warning btn-sm">ویرایش</a>
+
+                    <!-- حذف -->
+                    <a href="{% url 'classroom_delete_view' classroom.pk %}" class="btn btn-danger btn-sm">
+                        حذف
+                    </a>
                 </td>
             </tr>
             {% endfor %}

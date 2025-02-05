@@ -1,0 +1,62 @@
+{% extends 'manager/base.html' %}
+{% block title_page %}اخذ درس جدید{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg">
+    <div class="card-header bg-primary text-white">
+        <h4 class="card-title mb-0">
+            <i class="fas fa-book-medical"></i>
+            فرم اخذ درس جدید
+        </h4>
+    </div>
+    
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">انتخاب دانشجو</label>
+                    <select name="student" class="form-select" required>
+                        <option value="">-- لطفا دانشجو را انتخاب کنید --</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name }} - {{ student.user.student_id }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <label class="form-label">انتخاب دروس</label>
+                    <div class="row">
+                        {% for course in courses %}
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                    name="courses" value="{{ course.id }}" 
+                                    id="course{{ course.id }}">
+                                <label class="form-check-label" for="course{{ course.id }}">
+                                    {{ course.course_name }} ({{ course.units }} واحد)
+                                    {% if course.prerequisites.exists %}
+                                    <small class="text-muted d-block">
+                                        پیش‌نیازها: 
+                                        {{ course.prerequisites.all|join:", " }}
+                                    </small>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-save"></i>
+                ثبت نهایی
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
