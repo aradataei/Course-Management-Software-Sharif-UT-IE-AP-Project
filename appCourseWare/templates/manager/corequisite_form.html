@@ -1,0 +1,53 @@
+{% extends 'manager/base.html' %}
+{% block title_page %}{% if form.instance.pk %}ویرایش{% else %}ایجاد{% endif %} رابطه همنیازی{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg col-md-8 mx-auto">
+    <div class="card-header bg-info text-white">
+        <h3 class="card-title">{% if form.instance.pk %}ویرایش{% else %}ایجاد{% endif %} رابطه همنیازی</h3>
+    </div>
+    
+    <form method="post" class="p-4">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label class="form-label">درس اصلی</label>
+            <select name="course" class="form-select" required>
+                <option value="">انتخاب کنید</option>
+                {% for course in courses %}
+                <option value="{{ course.id }}" {% if form.course.value == course.id %}selected{% endif %}>
+                    {{ course.course_code }} - {{ course.course_name }} ({{ course.department.name }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if form.errors.course %}
+            <div class="text-danger">{{ form.errors.course }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">همنیاز الزامی</label>
+            <select name="required_course" class="form-select" required>
+                <option value="">انتخاب کنید</option>
+                {% for course in courses %}
+                <option value="{{ course.id }}" {% if form.required_course.value == course.id %}selected{% endif %}>
+                    {{ course.course_code }} - {{ course.course_name }} ({{ course.department.name }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if form.errors.required_course %}
+            <div class="text-danger">{{ form.errors.required_course }}</div>
+            {% endif %}
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>ذخیره تغییرات
+            </button>
+            <a href="{% url 'corequisite_list_view' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>انصراف
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

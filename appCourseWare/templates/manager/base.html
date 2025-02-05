@@ -30,8 +30,14 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <div class="collapse navbar-collapse" id="mainNav">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="{% url 'home' %}">
+                                    <i class="fas fa-home me-1"></i>خانه
+                                </a>
+                            </li>
+        
                         <!-- User Management -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -89,7 +95,11 @@
                                                 <span class="badge bg-primary float-start">{{ Major.objects.count }}</span>
                                             </a>
                                         </li>
-            
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'corequisite_list_view' %}">
+                                                <i class="fas fa-link me-2"></i>روابط همنیازی
+                                            </a>
+                                        </li>
                                 {% comment %} </a></li>
                                 <li><a class="dropdown-item" href="{% url 'manage_prerequisites' %}">
                                     <i class="fas fa-link"></i> مدیریت پیش‌نیازها

@@ -488,3 +488,78 @@ def major_list_view(request):
 
 def major_edit_view(request, pk):
     pass
+
+@staff_member_required
+def corequisite_list_view(request):
+    corequisites = CoRequisite.objects.select_related('course', 'required_course')
+    context = {
+        'corequisites': corequisites,
+        'title': 'مدیریت همنیازها'
+    }
+    return render(request, 'manager/corequisite_list.html', context)
+
+@staff_member_required
+def corequisite_create_view(request):
+    if request.method == 'POST':
+        try:
+            course_id = request.POST.get('course')
+            required_course_id = request.POST.get('required_course')
+            
+            if course_id == required_course_id:
+                messages.error(request, 'یک درس نمی‌تواند همنیاز خودش باشد')
+                return redirect('corequisite_create_view')
+            
+            CoRequisite.objects.create(
+                course_id=course_id,
+                required_course_id=required_course_id
+            )
+            messages.success(request, 'همنیاز با موفقیت ایجاد شد')
+            return redirect('corequisite_list_view')
+            
+        except Exception as e:
+            messages.error(request, f'خطا در ایجاد همنیاز: {str(e)}')
+    
+    courses = Course.objects.all()
+    return render(request, 'manager/corequisite_form.html', {'courses': courses})
+
+@staff_member_required
+def corequisite_edit_view(request, pk):
+    corequisite = get_object_or_404(CoRequisite, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            course_id = request.POST.get('course')
+            required_course_id = request.POST.get('required_course')
+            
+            if course_id == required_course_id:
+                messages.error(request, 'یک درس نمی‌تواند همنیاز خودش باشد')
+                return redirect('corequisite_edit_view', pk=pk)
+            
+            corequisite.course_id = course_id
+            corequisite.required_course_id = required_course_id
+            corequisite.save()
+            
+            messages.success(request, 'همنیاز با موفقیت ویرایش شد')
+            return redirect('corequisite_list_view')
+            
+        except Exception as e:
+            messages.error(request, f'خطا در ویرایش همنیاز: {str(e)}')
+    
+    courses = Course.objects.all()
+    return render(request, 'manager/corequisite_form.html', {
+        'corequisite': corequisite,
+        'courses': courses
+    })
+
+
+@staff_member_required
+def corequisite_delete_view(request, pk):
+    corequisite = get_object_or_404(CoRequisite, pk=pk)
+    if request.method == 'POST':
+        try:
+            corequisite.delete()
+            messages.success(request, 'همنیازی با موفقیت حذف شد')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف همنیازی: {str(e)}')
+        return redirect('corequisite_list_view')
+    return render(request, 'manager/confirm_delete.html', {'object': corequisite})

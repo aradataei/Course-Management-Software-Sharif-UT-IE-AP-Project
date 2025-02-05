@@ -38,9 +38,16 @@ urlpatterns = [
     path('manager/courses/edit/<int:pk>/', adminViews.course_edit_view, name='course_edit_view'),
     path('manager/courses/delete/<int:pk>/', adminViews.course_delete_view, name='course_delete_view'),
     
+    # CoRequisite Management
+    path('manager/corequisites/', adminViews.corequisite_list_view, name='corequisite_list_view'),
+    path('manager/corequisites/create/', adminViews.corequisite_create_view, name='corequisite_create_view'),
+    path('manager/corequisites/edit/<int:pk>/', adminViews.corequisite_edit_view, name='corequisite_edit_view'),
+    path('manager/corequisites/delete/<int:pk>/', adminViews.corequisite_delete_view, name='corequisite_delete_view'),
+
     path('manager/enroll-student/', adminViews.enroll_student_view, name='enroll_student'),
 
     path('manager/majors/', adminViews.major_list_view, name='major_list_view'),
     path('manager/majors/edit/<int:pk>/', adminViews.major_edit_view, name='major_edit_view'),
 
+    path('', views.home, name='home'),
 ]

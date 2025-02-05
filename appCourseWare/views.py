@@ -49,3 +49,5 @@ class CustomLoginView(LoginView):
         return super().form_valid(form)
     
 
+def home(request):
+    pass
