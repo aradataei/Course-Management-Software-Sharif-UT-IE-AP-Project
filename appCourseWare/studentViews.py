@@ -94,9 +94,9 @@ def handle_add_course(request, course_id, student):
         return redirect('home_view')
     
     # بررسی پیشنیازها
-    if not check_corequisites(student, course):
-        messages.error(request, f'پیشنیازهای {course.course_name} تکمیل نشده')
-        return redirect('home_view')
+    # if not check_corequisites(student, course):
+    #     messages.error(request, f'پیشنیازهای {course.course_name} تکمیل نشده')
+    #     return redirect('home_view')
     
     # بررسی تعداد واحدها
     new_units = sum_units(student, session['selected_courses']) + course.units
