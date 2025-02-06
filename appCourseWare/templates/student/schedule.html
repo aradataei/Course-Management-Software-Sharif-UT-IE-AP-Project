@@ -1,0 +1,144 @@
+{% extends '../base.html' %}
+{% load schedule_tags %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5" dir="rtl">
+    <!-- Student Information Section -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">اطلاعات دانشجو</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-2"><strong>نام دانشجو:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-2"><strong>معدل:</strong> {{ student_info.gpa }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-2"><strong>واحدهای اخذ شده:</strong>
+                        {{ student_info.current_units }} از {{ student_info.max_units }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Table -->
+    <div class="card shadow">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">برنامه هفتگی ترم</h3>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-hover text-center">
+                <thead class="thead-light">
+                    <tr>
+                        <th scope="col">ساعت</th>
+                        {% for day in days %}
+                        <th scope="col">{{ day }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for time in time_slots %}
+                    <tr>
+                        <td class="align-middle">{{ time }}</td>
+                        {% for day in days %}
+                        <td class="align-middle">
+                            {% if schedule|get_item:day|get_item:time %}
+                                {% for course in schedule|get_item:day|get_item:time %}
+                                    <!-- Course Card -->
+                                    <div class="course-card mb-2">
+                                        <div class="card-body p-2">
+                                             <h6 class="card-title text-info">{{ course.course_name }}</h6>
+                                            <p class="card-text mb-1">
+                                                <small class="text-muted">{{ course.course_code }}</small>
+                                            </p>
+                                            <p class="card-text mb-1">
+                                                <small >{{ course.professor }}</small>
+                                            </p>
+                                             <p class="card-text">
+                                                <small class="text-success">{{ course.classroom }}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                 <!-- Empty Slot -->
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    /* General Improvements */
+    body {
+        font-family: 'Vazir', sans-serif; /* A good Persian/Arabic font */
+    }
+
+    .container {
+        max-width: 95%; /* More breathing room */
+    }
+     .card {
+        border-radius: 0.5rem; /* Softer edges */
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+
+     /* Course Card Styling */
+    .course-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+
+    }
+    .course-card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow on hover */
+        background-color: #e9ecef !important;
+
+    }
+
+    .course-card .card-title{
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+   /* Table Styling */
+    th {
+        min-width: 120px;
+        background-color: #f8f9fa; /* Light gray header background */
+        font-weight: 600;       /* Bolder header text */
+    }
+    td {
+        min-width: 200px;
+        vertical-align: middle; /* Center content vertically */
+    }
+
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #dee2e6; /* Consistent borders */
+    }
+     .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.075); /* Light blue hover effect */
+    }
+
+</style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+
+{% endblock %}

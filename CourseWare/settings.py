@@ -105,5 +105,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'appCourseWare.CustomUser'
 
 
-LOGIN_REDITECT_URL = 'home'
+LOGIN_REDITECT_URL = 'home_view'
 LOGOUT_REDIRECT_URL = 'login'

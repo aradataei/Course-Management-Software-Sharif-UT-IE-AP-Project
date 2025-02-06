@@ -22,16 +22,17 @@
     <header class="admin-header">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#">
-                    <img src="{% static 'img/logo.png' %}" alt="لوگوی دانشگاه" width="40">
+                <a class="navbar-brand" href="{% url 'home_view' %}">
+                    <img src="https://www.sharif.ir/documents/20124/0/logo-fa-IR.png/4d9b72bc-494b-ed5a-d3bb-e7dfd319aec8?t=1609608338755" alt="لوگوی دانشگاه" width="40" href="{% url 'home_view' %}">
                 </a>
                 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <div class="collapse navbar-collapse" id="mainNav">
+        
                         <!-- User Management -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -81,7 +82,19 @@
                                 <li><a class="dropdown-item" href="{% url 'classroom_list_view' %}">
                                     <i class="fas fa-chalkboard"></i> مدیریت کلاس‌ها
                                 </a></li>
-
+                                        <!-- لینک جدید -->
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'major_list_view' %}">
+                                                <i class="fas fa-graduation-cap me-2"></i>
+                                                مدیریت رشته‌ها
+                                                <span class="badge bg-primary float-start">{{ Major.objects.count }}</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'corequisite_list_view' %}">
+                                                <i class="fas fa-link me-2"></i>روابط همنیازی
+                                            </a>
+                                        </li>
                                 {% comment %} </a></li>
                                 <li><a class="dropdown-item" href="{% url 'manage_prerequisites' %}">
                                     <i class="fas fa-link"></i> مدیریت پیش‌نیازها

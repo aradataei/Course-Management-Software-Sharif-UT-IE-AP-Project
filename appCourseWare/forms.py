@@ -21,11 +21,11 @@ class StudentProfileForm(forms.ModelForm):
         model = Student
         exclude = ['user']
         labels = {
-            'first_name': 'سال ورود',
-            'last_name': 'ترم ورود',
+            'first_name': 'نام ',
+            'last_name': 'نام خانوادگی ',
             'major': 'رشته تحصیلی',
-            'phone_number': 'استاد راهنما',
-            'email': 'وضعیت نظام وظیفه',
+            'phone_number': 'شماره تلفن',
+            'email': 'ایمیل',
             'admission_form': 'سال ورود',
         }
 

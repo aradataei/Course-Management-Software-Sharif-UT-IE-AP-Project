@@ -291,38 +291,42 @@ class Course(models.Model):
 
 
 class StudentCourse(models.Model):
+    STATUS_CHOICES = (
+        ('enrolled', 'Enrolled'),
+        ('withdrawn', 'Withdrawn'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+        # Add other status options as needed
+    )
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    enrollment_date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=(
-        ('enrolled', 'ثبت نام شده'),  # "در حال گذراندن"
-        ('pending', 'انتظار'),           # "افتاده"
-        ('withdrawn', 'حذف اضطراری'),    # "حذف اضطراری"
-        ('completed', 'گذرانده'),        # "گذرانده"
-    ))
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enrolled')
 
     class Meta:
         unique_together = ('student', 'course')
 
     def clean(self):
-        if self.course.remaining_capacity <= 0 and self.status == 'enrolled':
-            raise ValidationError('ظرفیت دوره به حداکثر رسیده است.')
-
-    def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        if is_new and self.status == 'enrolled':
-            if self.course.remaining_capacity <= 0:
-                raise ValidationError('ظرفیت دوره کامل شده است.')
-            self.course.remaining_capacity -= 1
-            self.course.save()
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
         if self.status == 'enrolled':
-            self.course.remaining_capacity += 1
-            self.course.save()
-        super().delete(*args, **kwargs)
+            for co_requisite in self.course.corequisites.all():
+                if not StudentCourse.objects.filter(student=self.student, course=co_requisite.corequisite, status='enrolled').exists():
+                    raise ValidationError(
+                        f"You must enroll in {co_requisite.corequisite.course_name} as a co-requisite."
+                    )
+                
+def save(self, *args, **kwargs):
+    is_new = self.pk is None  # Check if it's a new enrollment
+    if is_new and self.status == 'enrolled':
+        if self.course.remaining_capacity <= 0:
+            raise ValidationError('Course capacity full.')
+        self.course.remaining_capacity -= 1
+        self.course.save()
+    super().save(*args, **kwargs)
 
+def delete(self, *args, **kwargs):
+    if self.status == 'enrolled':
+        self.course.remaining_capacity += 1
+        self.course.save()
+    super().delete(*args, **kwargs)
     def __str__(self):
         return f"{self.student} ثبت نام شد در {self.course}"
 

@@ -289,35 +289,6 @@ def classroom_delete_view(request, pk):
     # اگر متد POST نبود یعنی کاربر هنوز فرم تایید را نفرستاده
     return render(request, 'manager/confirm_delete.html', {'object': classroom, 'type': 'کلاس'})
 
-# ------------------------ مدیریت پیشنیازها --------------------------
-@staff_member_required
-def manage_prerequisites_view(request, course_id):
-    """مدیریت پیشنیازها و همنیازهای یک درس"""
-    course = get_object_or_404(Course, pk=course_id)
-    all_courses = Course.objects.exclude(pk=course_id)
-    
-    if request.method == 'POST':
-        # مدیریت پیشنیازها
-        prerequisite_ids = request.POST.getlist('prerequisites')
-        for pid in prerequisite_ids:
-            prereq = get_object_or_404(Course, pk=pid)
-            Prerequisite.objects.get_or_create(course=course, required_course=prereq)
-        
-        # مدیریت همنیازها
-        corequisite_ids = request.POST.getlist('corequisites')
-        for cid in corequisite_ids:
-            coreq = get_object_or_404(Course, pk=cid)
-            CoRequisite.objects.get_or_create(course=course, required_course=coreq)
-        
-        messages.success(request, 'وابستگی‌ها با موفقیت بروزرسانی شدند')
-        return redirect('course_detail_view', pk=course_id)
-    
-    return render(request, 'manager/manage_dependencies.html', {
-        'course': course,
-        'all_courses': all_courses
-    })
-
-
 @staff_member_required
 def course_list_view(request):
     courses = Course.objects.select_related(
@@ -375,6 +346,7 @@ def course_create_view(request):
             'departments': departments,
             'professors': professors,
             'classrooms': classrooms,
+            'time_slots': Course.TIME_SLOTS, # اضافه کردن این خط
             'majors': majors
         })
     
@@ -425,6 +397,7 @@ def course_edit_view(request, pk):
             'departments': departments,
             'professors': professors,
             'classrooms': classrooms,
+            'time_slots': Course.TIME_SLOTS, # اضافه کردن این خط
             'majors': majors
         })
     
@@ -502,3 +475,91 @@ def enroll_student_view(request):
         'students': students,
         'courses': courses
     })
+
+@staff_member_required
+def major_list_view(request):
+    majors = Major.objects.all().order_by('major_name')
+    context = {
+        'majors': majors,
+        'page_title': 'مدیریت رشته‌های تحصیلی',
+        'active_menu': 'academic-management'
+    }
+    return render(request, 'manager/major_list.html', context)
+
+def major_edit_view(request, pk):
+    pass
+
+@staff_member_required
+def corequisite_list_view(request):
+    corequisites = CoRequisite.objects.select_related('course', 'required_course')
+    context = {
+        'corequisites': corequisites,
+        'title': 'مدیریت همنیازها'
+    }
+    return render(request, 'manager/corequisite_list.html', context)
+
+@staff_member_required
+def corequisite_create_view(request):
+    if request.method == 'POST':
+        try:
+            course_id = request.POST.get('course')
+            required_course_id = request.POST.get('required_course')
+            
+            if course_id == required_course_id:
+                messages.error(request, 'یک درس نمی‌تواند همنیاز خودش باشد')
+                return redirect('corequisite_create_view')
+            
+            CoRequisite.objects.create(
+                course_id=course_id,
+                required_course_id=required_course_id
+            )
+            messages.success(request, 'همنیاز با موفقیت ایجاد شد')
+            return redirect('corequisite_list_view')
+            
+        except Exception as e:
+            messages.error(request, f'خطا در ایجاد همنیاز: {str(e)}')
+    
+    courses = Course.objects.all()
+    return render(request, 'manager/corequisite_form.html', {'courses': courses})
+
+@staff_member_required
+def corequisite_edit_view(request, pk):
+    corequisite = get_object_or_404(CoRequisite, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            course_id = request.POST.get('course')
+            required_course_id = request.POST.get('required_course')
+            
+            if course_id == required_course_id:
+                messages.error(request, 'یک درس نمی‌تواند همنیاز خودش باشد')
+                return redirect('corequisite_edit_view', pk=pk)
+            
+            corequisite.course_id = course_id
+            corequisite.required_course_id = required_course_id
+            corequisite.save()
+            
+            messages.success(request, 'همنیاز با موفقیت ویرایش شد')
+            return redirect('corequisite_list_view')
+            
+        except Exception as e:
+            messages.error(request, f'خطا در ویرایش همنیاز: {str(e)}')
+    
+    courses = Course.objects.all()
+    return render(request, 'manager/corequisite_form.html', {
+        'corequisite': corequisite,
+        'courses': courses
+    })
+
+
+@staff_member_required
+def corequisite_delete_view(request, pk):
+    corequisite = get_object_or_404(CoRequisite, pk=pk)
+    if request.method == 'POST':
+        try:
+            corequisite.delete()
+            messages.success(request, 'همنیازی با موفقیت حذف شد')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف همنیازی: {str(e)}')
+        return redirect('corequisite_list_view')
+    return render(request, 'manager/confirm_delete.html', {'object': corequisite})

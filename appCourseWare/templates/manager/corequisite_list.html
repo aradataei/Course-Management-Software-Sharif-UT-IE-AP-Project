@@ -1,0 +1,53 @@
+{% extends 'manager/base.html' %}
+{% block title_page %}مدیریت همنیازها{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="card-title">لیست همنیازها</h3>
+            <a href="{% url 'corequisite_create_view' %}" class="btn btn-light">
+                <i class="fas fa-plus-circle me-2"></i>افزودن همنیاز جدید
+            </a>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>درس اصلی</th>
+                        <th>همنیاز الزامی</th>
+                        <th>کد درس</th>
+                        <th>واحدها</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coreq in corequisites %}
+                    <tr>
+                        <td>{{ coreq.course.course_name }}</td>
+                        <td>{{ coreq.required_course.course_name }}</td>
+                        <td>{{ coreq.course.course_code }} - {{ coreq.required_course.course_code }}</td>
+                        <td>{{ coreq.course.units }} | {{ coreq.required_course.units }}</td>
+                        <td>
+                            <a href="{% url 'corequisite_edit_view' coreq.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'corequisite_delete_view' coreq.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">هیچ همنیازی ثبت نشده است</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
