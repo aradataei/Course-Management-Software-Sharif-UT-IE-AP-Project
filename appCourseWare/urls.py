@@ -3,7 +3,7 @@ from . import views, adminViews, studentViews  # Import studentViews
 
 urlpatterns = [
     # USER
-    path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('', views.CustomLoginView.as_view(), name='login'),
     path('register/', views.register, name='register'),
     path('logout/', views.CustomLogoutView.as_view(), name='logout'),
     path('create-student-profile/', views.create_student_profile, name='create_student_profile'),
@@ -50,7 +50,6 @@ urlpatterns = [
     path('manager/majors/edit/<int:pk>/', adminViews.major_edit_view, name='major_edit_view'),
 
     path('home', studentViews.home_view, name='home_view'),
-
-    # Student Schedule View (NEW)
     path('student/schedule/', studentViews.student_view, name='student_schedule'),
+    path('student/profile/', studentViews.student_profile, name='student_profile'),
 ]

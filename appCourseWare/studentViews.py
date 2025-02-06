@@ -4,6 +4,9 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.contrib.auth.decorators import login_required
 from .models import Course, Department, Student, StudentCourse, Prerequisite
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
+from django.core.exceptions import ValidationError
 
 @login_required
 def home_view(request):
@@ -91,7 +94,7 @@ def handle_add_course(request, course_id, student):
         return redirect('home_view')
     
     # بررسی پیشنیازها
-    if not check_prerequisites(student, course):
+    if not check_corequisites(student, course):
         messages.error(request, f'پیشنیازهای {course.course_name} تکمیل نشده')
         return redirect('home_view')
     
@@ -107,6 +110,17 @@ def handle_add_course(request, course_id, student):
         session.modified = True
         messages.success(request, f'{course.course_name} به سبد اضافه شد')
     
+    current_units = StudentCourse.objects.filter(
+        student=student, 
+        status='enrolled'
+    ).aggregate(Sum('course__units'))['course__units__sum'] or 0
+
+    selected_units = sum_units(student, session['selected_courses'])
+    total_units = current_units + selected_units + course.units
+
+    if total_units > student.max_units:
+        messages.error(request, 'تعداد واحد مجاز رد شده')
+        return redirect('home_view')
     return redirect('home_view')
 
 def handle_remove_course(request, course_id):
@@ -196,21 +210,37 @@ def has_time_conflict_in_list(courses):
                 return True
     return False
 
-def check_prerequisites(student, course):
-    """بررسی پیشنیازهای دوره"""
-    required = course.prerequisites.all()
-    completed = StudentCourse.objects.filter(
-        student=student,
-        status='completed'
-    ).values_list('course__id', flat=True)
-    
-    return all(req.id in completed for req in required)
+def check_corequisites(course, student, session):
+    pass
 
 def sum_units(student, selected_ids):
     """محاسبه مجموع واحدهای انتخابی"""
     return Course.objects.filter(
         id__in=selected_ids
     ).aggregate(Sum('units'))['units__sum'] or 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -277,3 +307,89 @@ def student_view(request):
     }
 
     return render(request, 'student/schedule.html', context)
+
+
+
+
+
+@login_required
+def student_profile(request):
+    student = get_object_or_404(Student, user=request.user)
+    enrolled_courses = StudentCourse.objects.filter(
+        student=student,
+        status='enrolled'
+    ).select_related('course')
+    
+    # ایجاد فرم ویرایش پروفایل
+    if request.method == 'POST':
+        # بخش ویرایش اطلاعات شخصی
+        if 'profile_update' in request.POST:
+            student.first_name = request.POST.get('first_name')
+            student.last_name = request.POST.get('last_name')
+            student.email = request.POST.get('email')
+            student.phone_number = request.POST.get('phone_number')
+            
+
+            try:
+                student.full_clean()
+                student.save()
+                messages.success(request, 'اطلاعات با موفقیت به روز رسانی شد')
+            except ValidationError as e:
+                messages.error(request, f'خطا در اعتبارسنجی: {e}')
+        
+        # بخش حذف دوره‌ها
+        elif 'course_withdraw' in request.POST:
+            course_id = request.POST.get('course_id')
+            return withdraw_course(request, course_id)
+    
+    context = {
+        'student': {
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'email': student.email,
+            'phone_number': student.phone_number,
+            'major': student.major.major_name,
+            'gpa': student.gpa,
+            'current_units': student.get_current_units(),
+            'max_units': student.max_units
+        },
+        'courses': [
+            {
+                'id': sc.course.id,
+                'name': sc.course.course_name,
+                'code': sc.course.course_code,
+                'units': sc.course.units,
+                'professor': sc.course.professor.last_name,
+                'remaining_capacity': sc.course.remaining_capacity
+            } for sc in enrolled_courses
+        ]
+    }
+    
+    return render(request, 'student/profile.html', context)
+
+@require_POST
+@login_required
+@transaction.atomic
+def withdraw_course(request, course_id):
+    student = get_object_or_404(Student, user=request.user)
+    course = get_object_or_404(Course, pk=course_id)
+    enrollment = get_object_or_404(
+        StudentCourse,
+        student=student,
+        course=course,
+        status='enrolled'
+    )
+    
+    # به روزرسانی وضعیت ثبت‌نام
+    enrollment.status = 'withdrawn'
+    enrollment.save()
+    
+    # بازگرداندن ظرفیت دوره
+    course.remaining_capacity += 1
+    course.save()
+    
+    enrollment.delete()
+    messages.success(request, f'دوره {course.course_name} با موفقیت حذف شد')
+    return redirect('student_profile')
+
+

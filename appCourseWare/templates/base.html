@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
+    {% load static %}
     <style>
         /* Custom Styles */
         body {
@@ -83,18 +83,23 @@
     <!-- ناوبری -->
     <nav class="navbar navbar-expand-lg ">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home_view' %}">لوگو سایت</a>
+            <a class="navbar-brand" href="{% url 'home_view' %}">                     <img src="https://www.sharif.ir/documents/20124/0/logo-fa-IR.png/4d9b72bc-494b-ed5a-d3bb-e7dfd319aec8?t=1609608338755" alt="لوگوی دانشگاه" width="40" href="{% url 'home_view' %}">
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home_view' %}">خانه</a>
+                        <a class="nav-link" href="{% url 'home_view' %}">انتخاب واحد</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'student_schedule' %}">برنامه دانشجو</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'student_profile' %}">اطلاعات کاربری</a>
+                    </li>
+
                     {% if user.is_authenticated %}
                         <li class="nav-item">
                             <form action="{% url 'logout' %}" method="post" class="logout-form">
@@ -119,9 +124,9 @@
     </main>
 
     <!-- فوتر -->
-    <footer>
+    {% comment %} <footer>
         <p>تمامی حقوق محفوظ است برای تیم طراحان محمدمهدی هاشمی و آراد عطائی</p>
-    </footer>
+    </footer> {% endcomment %}
 
     <!-- Bootstrap JS (Optional, if you need JS components) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>

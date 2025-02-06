@@ -12,15 +12,16 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            # Instead of creating a Student immediately, the user is redirected to create the Student profile page.
             return redirect('create_student_profile')
     else:
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
-# Function to create a Student profile
+
+
+
+
 def create_student_profile(request):
-    # If the user already has a Student profile, redirect to the home page.
     if hasattr(request.user, 'student'):
         return redirect('home')
         
@@ -30,7 +31,7 @@ def create_student_profile(request):
             student = form.save(commit=False)
             student.user = request.user
             student.save()
-            return redirect('home')
+            return redirect('home_view')
     else:
         form = StudentProfileForm()
     
