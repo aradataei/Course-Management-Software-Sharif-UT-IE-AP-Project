@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="container mt-5" dir="rtl">
-    <!-- Student Information Section -->
     <div class="card mb-4 shadow">
         <div class="card-header bg-primary text-white">
             <h3 class="mb-0">اطلاعات دانشجو</h3>
@@ -26,7 +25,6 @@
         </div>
     </div>
 
-    <!-- Schedule Table -->
     <div class="card shadow">
         <div class="card-header bg-success text-white">
             <h3 class="mb-0">برنامه هفتگی ترم</h3>
@@ -49,7 +47,6 @@
                         <td class="align-middle">
                             {% if schedule|get_item:day|get_item:time %}
                                 {% for course in schedule|get_item:day|get_item:time %}
-                                    <!-- Course Card -->
                                     <div class="course-card mb-2">
                                         <div class="card-body p-2">
                                              <h6 class="card-title text-info">{{ course.course_name }}</h6>
@@ -66,7 +63,6 @@
                                     </div>
                                 {% endfor %}
                             {% else %}
-                                 <!-- Empty Slot -->
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
@@ -81,23 +77,21 @@
 
 
 <style>
-    /* General Improvements */
     body {
-        font-family: 'Vazir', sans-serif; /* A good Persian/Arabic font */
+        font-family: 'Vazir', sans-serif; 
     }
 
     .container {
-        max-width: 95%; /* More breathing room */
+        max-width: 95%;
     }
      .card {
-        border-radius: 0.5rem; /* Softer edges */
+        border-radius: 0.5rem; 
     }
     .table-responsive {
         overflow-x: auto;
     }
 
 
-     /* Course Card Styling */
     .course-card {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         border: 1px solid #dee2e6;
@@ -107,7 +101,7 @@
     }
     .course-card:hover {
         transform: scale(1.03);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow on hover */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
         background-color: #e9ecef !important;
 
     }
@@ -117,23 +111,22 @@
         font-weight: 600;
     }
 
-   /* Table Styling */
     th {
         min-width: 120px;
-        background-color: #f8f9fa; /* Light gray header background */
-        font-weight: 600;       /* Bolder header text */
+        background-color: #f8f9fa; 
+        font-weight: 600;   
     }
     td {
         min-width: 200px;
-        vertical-align: middle; /* Center content vertically */
+        vertical-align: middle; 
     }
 
     .table-bordered th,
     .table-bordered td {
-        border: 1px solid #dee2e6; /* Consistent borders */
+        border: 1px solid #dee2e6; 
     }
      .table-hover tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.075); /* Light blue hover effect */
+        background-color: rgba(0, 123, 255, 0.075); 
     }
 
 </style>

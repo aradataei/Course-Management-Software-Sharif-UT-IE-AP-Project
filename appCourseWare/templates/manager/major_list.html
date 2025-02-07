@@ -5,12 +5,10 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">مدیریت جامع رشته‌های تحصیلی</h2>
-        {% comment %} <a href="{% url 'major_edit_view' major.pk %}" class="btn btn-success"> {% endcomment %}
             <i class="fas fa-plus-circle"></i> ایجاد رشته جدید
         </a>
     </div>
 
-    <!-- آمار کلی -->
     <div class="card border-primary mb-4">
         <div class="card-body py-3">
             <div class="row g-4">
@@ -30,10 +28,6 @@
                         <div class="bg-success text-white rounded-circle p-3">
                             <i class="fas fa-users fa-2x"></i>
                         </div>
-                        {% comment %} <div class="ms-3">
-                            <h6 class="mb-0">دانشجویان فعال</h6>
-                            <span class="h4">{{ total_students|intcomma }}</span>
-                        </div> {% endcomment %}
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
@@ -131,7 +125,6 @@
                                             aria-valuemax="100">
                                         </div>
                                     </div>
-                                    {% comment %} <span>{{ major.student_set.count|intcomma }}</span> {% endcomment %}
                                 </div>
                             </td>
                             <td>
@@ -183,7 +176,6 @@
     </div>
 </div>
 
-<!-- استایل‌های سفارشی -->
 <style>
 .symbol {
     display: inline-flex;
@@ -207,10 +199,8 @@
 }
 </style>
 
-<!-- اسکریپت‌های تعاملی -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // فعال‌سازی جستجو
     const searchInput = document.getElementById('searchInput');
     const departmentFilter = document.getElementById('departmentFilter');
     const minStudents = document.getElementById('minStudents');
@@ -240,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
         element.addEventListener('input', filterTable);
     });
 
-    // فعال‌سازی تولتیپ‌ها
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 });

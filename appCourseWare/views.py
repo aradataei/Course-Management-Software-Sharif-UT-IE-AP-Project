@@ -17,10 +17,6 @@ def register(request):
         form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
-
-
-
-
 def create_student_profile(request):
     if hasattr(request.user, 'student'):
         return redirect('home')
@@ -42,18 +38,11 @@ class CustomLoginView(LoginView):
     redirect_authenticated_user = True
     
     def form_valid(self, form):
-        # Call the parent form_valid to perform the login
-        response = super().form_valid(form)
-        # Get the authenticated user from the form instance
+        super().form_valid(form)
         user = self.request.user
         
-        # Check if the user is either staff or superuser (admin)
         if user.is_staff or user.is_superuser:
-            # Redirect to the course_list_view for admin/staff members.
             return redirect('course_list_view')
         else:
-            # Otherwise, redirect to the home page for normal members.
             return redirect('home_view')
-
-        # Note: The returned 'response' isn't used here because we're overriding the redirect.
         

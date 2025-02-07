@@ -34,15 +34,11 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(student_id, password, **extra_fields)
 
 
-
-
 class UserLevel(models.Model):
     user_level_name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.user_level_name
-
-
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -60,12 +56,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'student_id'
-    REQUIRED_FIELDS = []  # Email is not required
+    REQUIRED_FIELDS = [] 
 
     def __str__(self):
         return str(self.student_id)
-
-
 
 
 class Major(models.Model):
@@ -80,7 +74,6 @@ class Student(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     
-    # فیلد national_id با اعتبارسنجی 10 رقمی
     national_id = models.CharField(
         max_length=10,
         unique=True,
@@ -92,9 +85,8 @@ class Student(models.Model):
         ]
     )
     
-    # فیلد phone_number با اعتبارسنجی فرمت ایرانی
     phone_number = models.CharField(
-        max_length=13,  # +98 و 10 رقم
+        max_length=13,
         blank=True,
         null=True,
         validators=[
@@ -117,7 +109,7 @@ class Student(models.Model):
     max_units = models.PositiveIntegerField(default=0, editable=False)
     
     email = models.EmailField(unique=True)
-    major = models.ForeignKey('Major', on_delete=models.SET_NULL, null=True)  # فرض بر وجود مدل Major
+    major = models.ForeignKey('Major', on_delete=models.SET_NULL, null=True) 
     admission_year = models.PositiveIntegerField(default=1403, choices={
         1403: 1403,
         1402: 1402,
@@ -157,7 +149,6 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 
-
 class Department(models.Model):
     department_name = models.CharField(
         max_length=100,
@@ -172,7 +163,6 @@ class Department(models.Model):
         return self.department_name
 
 
-
 class Professor(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -181,8 +171,6 @@ class Professor(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
-
-
 
 
 class Classroom(models.Model):
@@ -194,9 +182,18 @@ class Classroom(models.Model):
 
 
 
-
-
 class Course(models.Model):
+    course_name = models.CharField(max_length=200)
+    course_code = models.CharField(max_length=50, unique=True)
+    exam_time = models.DateTimeField()
+    capacity = models.PositiveIntegerField(default=10)  # ظرفیت اولیه
+    remaining_capacity = models.PositiveIntegerField(default=0)  # ظرفیت باقی‌مانده
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    professor = models.ForeignKey(Professor, on_delete=models.SET_NULL, null=True, blank=True)
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
+    corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
+    units = models.PositiveIntegerField(default=3)
+    major = models.ForeignKey(Major, related_name='majors', on_delete=models.SET_NULL, null=True, blank=True)
 
     DAYS_OF_WEEK = [
     ('Sat', 'شنبه'),
@@ -214,22 +211,7 @@ class Course(models.Model):
     ]
 
 
-    course_name = models.CharField(max_length=200)
-    course_code = models.CharField(max_length=50, unique=True)
-    exam_time = models.DateTimeField()
-    capacity = models.PositiveIntegerField(default=10)  # ظرفیت اولیه
-    remaining_capacity = models.PositiveIntegerField(default=0)  # ظرفیت باقی‌مانده
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    professor = models.ForeignKey(Professor, on_delete=models.SET_NULL, null=True, blank=True)
-    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
-    corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
-    units = models.PositiveIntegerField(default=3)
-    major = models.ForeignKey(Major, related_name='majors', on_delete=models.SET_NULL, null=True, blank=True)
-
     def validate_max_two_days(value):
-        """
-        اعتبارسنجی سفارشی برای روزهای هفته
-        """
         days = [d.strip() for d in value.split(',')]
         
         if len(days) > 2:
@@ -254,35 +236,21 @@ class Course(models.Model):
         verbose_name="زمان برگزاری کلاس"
     )
 
-
-    def check_prerequisites(self, student):
-        return self.prerequisites.exclude(
-            pk__in=student.studentcourse_set.filter(
-                status='completed'
-            ).values_list('course__pk', flat=True)
-        ).exists()
-
     def save(self, *args, **kwargs):
-        # اگر دوره جدید است، remaining_capacity را برابر با capacity قرار بده
         if not self.pk:
             self.remaining_capacity = self.capacity
         super().save(*args, **kwargs)
 
     def clean(self):
-        # اعتبارسنجی روزهای انتخاب شده
         if self.class_date:
-            # جدا کردن روزها بر اساس کاما و حذف فاصله‌های اضافی
             dates = [day.strip() for day in self.class_date.split(',')]
-            # بررسی تعداد روزهای انتخاب شده
             if not (1 <= len(dates) <= 2):
                 raise ValidationError("شما باید حداقل یکی و حداکثر دو روز را انتخاب کنید.")
-            # بررسی اعتبار هر روز انتخاب شده
             valid_days = [day[0] for day in self.DAYS_OF_WEEK]
             for day in dates:
                 if day not in valid_days:
                     raise ValidationError(f"{day} یک روز معتبر نیست.")
        
-
     def __str__(self):
         return self.course_name
 
@@ -295,7 +263,6 @@ class StudentCourse(models.Model):
         ('withdrawn', 'Withdrawn'),
         ('passed', 'Passed'),
         ('failed', 'Failed'),
-        # Add other status options as needed
     )
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
@@ -313,7 +280,7 @@ class StudentCourse(models.Model):
                     )
                 
 def save(self, *args, **kwargs):
-    is_new = self.pk is None  # Check if it's a new enrollment
+    is_new = self.pk is None 
     if is_new and self.status == 'enrolled':
         if self.course.remaining_capacity <= 0:
             raise ValidationError('Course capacity full.')
@@ -328,9 +295,6 @@ def delete(self, *args, **kwargs):
     super().delete(*args, **kwargs)
     def __str__(self):
         return f"{self.student} ثبت نام شد در {self.course}"
-
-
-
 
 
 
