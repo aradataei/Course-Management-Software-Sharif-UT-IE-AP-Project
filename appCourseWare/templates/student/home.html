@@ -60,7 +60,6 @@
         {% endif %}
 
         <div class="row">
-            <!-- فیلترها و جستجو -->
             <div class="col-md-3 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
@@ -127,13 +126,11 @@
                 </div>
             </div>
 
-            <!-- لیست دروس -->
             <div class="col-md-9">
                 <div class="row row-cols-1 row-cols-md-2 g-4">
                     {% for course in courses %}
                     <div class="col">
                         <div class="card course-card h-100 
-                            {% if not course.check_prerequisites %}prerequisite-warning{% endif %}
                             {% if course.remaining_capacity == 0 %}bg-danger text-white{% endif %}">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="card-title mb-0">{{ course.course_name }}</h5>
@@ -156,7 +153,7 @@
                                         <p class="mb-1"><strong>زمان کلاس:</strong> {{ course.class_time }}</p>
                                         <p class="mb-1"><strong>روزهای برگزاری:</strong> {{ course.class_date }}</p>
                                         <p class="mb-1"><strong>پیش‌نیازها:</strong>
-                                            {% for pre in course.prerequisites.all %}
+                                            {% for pre in course.corequisites.all %}
                                             <span class="badge bg-warning text-dark">{{ pre.course_name }}</span>
                                             {% empty %}
                                             <span class="text-muted">ندارد</span>
@@ -184,7 +181,6 @@
                                     {% else %}
                                         <button type="submit" name="add_course" 
                                                 class="btn btn-success" btn-sm {% if course.remaining_capacity == 0 %}disabled{% endif %}>
-                                                {% comment %} {% if not course.check_prerequisites %}پیش‌نیازها تکمیل نشده"{% endif %} {% endcomment %}
                                                 {% if course.remaining_capacity == 0 %}ظرفیت تکمیل شده"{% endif %}>
                                             افزودن به سبد
                                         </button>
@@ -241,7 +237,6 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                // مدیریت رویدادهای افزودن/حذف دوره
                 const handleCourseAction = async (formElement, successMessage, errorMessage) => {
                     try {
                         const formData = new FormData(formElement);
@@ -256,7 +251,6 @@
             
                         const data = await response.json();
                         if (data.success) {
-                            // به روزرسانی بخش‌های مختلف صفحه
                             updateCourseList(data);
                             updateBasket(data);
                             updateUnitCounters(data);
@@ -269,26 +263,22 @@
                     }
                 };
             
-                // به روزرسانی لیست دوره‌ها
                 const updateCourseList = (data) => {
                     document.querySelectorAll('.course-card').forEach(card => {
                         const courseId = card.dataset.courseId;
                         const addButton = card.querySelector('.add-btn');
                         
-                        // به روزرسانی وضعیت ظرفیت
                         if (data.remaining_capacity[courseId] <= 0) {
                             addButton.disabled = true;
                             card.classList.add('course-full');
                         }
             
-                        // به روزرسانی وضعیت پیشنیازها
                         if (data.prerequisite_warnings.includes(courseId)) {
                             card.classList.add('prerequisite-warning');
                         }
                     });
                 };
             
-                // به روزرسانی سبد خرید
                 const updateBasket = (data) => {
                     const basket = document.getElementById('selected-courses-list');
                     basket.innerHTML = data.selected_courses.map(course => `
@@ -304,14 +294,12 @@
                     `).join('');
                 };
             
-                // به روزرسانی شمارنده واحدها
                 const updateUnitCounters = (data) => {
                     document.getElementById('remaining-units').textContent = data.remaining_units;
                     document.getElementById('selected-units').textContent = data.selected_units;
                     document.getElementById('current-units').textContent = data.current_units;
                 };
             
-                // نمایش اعلان
                 const showToast = (message, type) => {
                     const toastContainer = document.getElementById('toast-container');
                     const toast = document.createElement('div');
@@ -326,7 +314,6 @@
                     new bootstrap.Toast(toast).show();
                 };
             
-                // مدیریت کلیک روی دکمه‌های افزودن/حذف
                 document.body.addEventListener('submit', (e) => {
                     e.preventDefault();
                     if (e.target.matches('.add-form, .remove-form')) {

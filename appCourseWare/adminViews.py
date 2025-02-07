@@ -8,18 +8,14 @@ from django.db.models import Sum
 from .models import (
     Course, Student, StudentCourse, Professor,
     Department, Classroom, CustomUser, UserLevel,
-    Major, Prerequisite, CoRequisite
+    Major, CoRequisite
 )
 
-# ------------------------ عمومی --------------------------
 def get_model_fields(model):
-    """تابع کمکی برای دریافت فیلدهای یک مدل"""
     return [field.name for field in model._meta.fields]
 
-# ------------------------ مدیریت کاربران --------------------------
 @staff_member_required
 def manage_users_view(request):
-    """مدیریت کاربران (تبدیل به ادمین/حذف ادمین)"""
     users = CustomUser.objects.all()
     user_levels = UserLevel.objects.all()
     
@@ -36,16 +32,13 @@ def manage_users_view(request):
             user.is_staff = False
             user.save()
             messages.success(request, 'ادمین با موفقیت حذف شد')
-            
     return render(request, 'manager/manage_users.html', {
         'users': users,
         'user_levels': user_levels
     })
 
-# ------------------------ مدیریت دانشجویان --------------------------
 @staff_member_required
 def student_list_view(request):
-    """لیست تمام دانشجویان"""
     students = Student.objects.select_related('user', 'major').all()
     return render(request, 'manager/student_list.html', {'students': students})
 
@@ -54,18 +47,14 @@ def student_edit_view(request, pk):
     student = get_object_or_404(Student, pk=pk)
     
     if request.method == 'POST':
-        # پردازش فیلد major به صورت جداگانه
         major_id = request.POST.get('major')
         if major_id:
             student.major = get_object_or_404(Major, pk=major_id)
-        
-        # بروزرسانی سایر فیلدها
         for field in get_model_fields(Student):
             if field in request.POST and field not in ['user', 'major']:  # exclude major
                 setattr(student, field, request.POST.get(field))
-        
         try:
-            student.full_clean()  # اعتبارسنجی مدل
+            student.full_clean()  
             student.save()
             messages.success(request, 'اطلاعات دانشجو با موفقیت بروزرسانی شد')
             return redirect('student_list_view')
@@ -83,18 +72,15 @@ def student_edit_view(request, pk):
 
 @staff_member_required
 def student_delete_view(request, pk):
-    """حذف دانشجو"""
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
-        student.user.delete()  # حذف کاربر مرتبط
+        student.user.delete() 
         messages.success(request, 'دانشجو با موفقیت حذف شد')
         return redirect('student_list_view')
     return render(request, 'manager/confirm_delete.html', {'object': student})
 
-# ------------------------ مدیریت اساتید --------------------------
 @staff_member_required
 def professor_list_view(request):
-    """لیست تمام اساتید"""
     professors = Professor.objects.select_related('department').all()
     return render(request, 'manager/professor_list.html', {'professors': professors})
 
@@ -103,7 +89,6 @@ def professor_create_view(request):
     try:
         departments = Department.objects.all()
         if request.method == 'POST':
-            # Validate required fields
             first_name = request.POST.get('first_name')
             last_name = request.POST.get('last_name')
             email = request.POST.get('email')
@@ -112,13 +97,11 @@ def professor_create_view(request):
             if not all([first_name, last_name, email, department_id]):
                 raise ValidationError("لطفا تمام فیلدهای ضروری را پر کنید")
 
-            # Check email uniqueness
             if Professor.objects.filter(email=email).exists():
                 raise ValidationError("این ایمیل قبلاً ثبت شده است")
 
             department = Department.objects.get(pk=department_id)
             
-            # Create professor
             professor = Professor.objects.create(
                 first_name=first_name,
                 last_name=last_name,
@@ -139,13 +122,12 @@ def professor_create_view(request):
 
 @staff_member_required
 def professor_edit_view(request, pk):
-    """ویرایش اطلاعات استاد"""
     professor = get_object_or_404(Professor, pk=pk)
     
     if request.method == 'POST':
         for field in get_model_fields(Professor):
             if field in request.POST and field != 'professor.pk':
-                if field == 'department':  # Check if field is department
+                if field == 'department':  
                     department_id = request.POST.get(field)
                     department_instance = Department.objects.get(pk=department_id)
                     setattr(professor, field, department_instance)
@@ -172,7 +154,6 @@ def professor_delete_view(request, pk):
         return redirect('professor_list_view')
     return render(request, 'manager/confirm_delete.html', {'object': professor})
 
-# ------------------------ مدیریت دپارتمان‌ها --------------------------
 @staff_member_required
 def department_list_view(request):
     departments = Department.objects.all()
@@ -180,9 +161,7 @@ def department_list_view(request):
 
 @staff_member_required
 def department_edit_view(request, pk=None):
-    """ایجاد/ویرایش دپارتمان"""
     department = get_object_or_404(Department, pk=pk) if pk else None
-    
     if request.method == 'POST':
         name = request.POST.get('department_name')
         if not name:
@@ -246,7 +225,6 @@ def classroom_create_view(request):
 
 @staff_member_required
 def classroom_edit_view(request, pk=None):
-    """ایجاد/ویرایش کلاس"""
     classroom = get_object_or_404(Classroom, pk=pk) if pk else None
     
     if request.method == 'POST':
@@ -286,16 +264,14 @@ def classroom_delete_view(request, pk):
             messages.error(request, f'خطا در حذف کلاس: {str(e)}')
         return redirect('classroom_list_view')
     
-    # اگر متد POST نبود یعنی کاربر هنوز فرم تایید را نفرستاده
     return render(request, 'manager/confirm_delete.html', {'object': classroom, 'type': 'کلاس'})
 
 @staff_member_required
 def course_list_view(request):
     courses = Course.objects.select_related(
         'department', 'professor', 'classroom'
-    ).prefetch_related('prerequisites', 'corequisites').all()
+    ).prefetch_related( 'corequisites').all()
     
-    # Filtering logic
     department_filter = request.GET.get('department')
     if department_filter:
         courses = courses.filter(department__department_name=department_filter)
@@ -316,7 +292,6 @@ def course_create_view(request):
         majors = Major.objects.all()
         
         if request.method == 'POST':
-            # دریافت تمامی فیلدهای مورد نیاز از مدل
             course_data = {
                 'course_name': request.POST.get('course_name'),
                 'course_code': request.POST.get('course_code'),
@@ -331,12 +306,10 @@ def course_create_view(request):
                 'major_id': request.POST.get('major')
             }
             
-            # اعتبارسنجی فیلدهای ضروری
             required_fields = ['course_name', 'units', 'department_id', 'professor_id', 'classroom_id']
             if not all(course_data[field] for field in required_fields):
                 raise ValidationError("پر کردن فیلدهای ستاره‌دار الزامی است")
             
-            # ایجاد دوره با تمامی فیلدهای مرتبط
             Course.objects.create(**course_data)
             
             messages.success(request, 'دوره جدید با موفقیت ساخته شد')
@@ -346,7 +319,7 @@ def course_create_view(request):
             'departments': departments,
             'professors': professors,
             'classrooms': classrooms,
-            'time_slots': Course.TIME_SLOTS, # اضافه کردن این خط
+            'time_slots': Course.TIME_SLOTS,
             'majors': majors
         })
     
@@ -364,7 +337,6 @@ def course_edit_view(request, pk):
         majors = Major.objects.all()
         
         if request.method == 'POST':
-            # دریافت و بروزرسانی تمامی فیلدها
             update_data = {
                 'course_name': request.POST.get('course_name'),
                 'course_code': request.POST.get('course_code'),
@@ -379,12 +351,10 @@ def course_edit_view(request, pk):
                 'major_id': request.POST.get('major')
             }
             
-            # اعتبارسنجی فیلدهای ضروری
             required_fields = ['course_name', 'units', 'department_id', 'professor_id', 'classroom_id']
             if not all(update_data[field] for field in required_fields):
                 raise ValidationError("پر کردن فیلدهای ستاره‌دار الزامی است")
             
-            # بروزرسانی شیء دوره
             for key, value in update_data.items():
                 setattr(course, key, value)
             course.save()
@@ -397,7 +367,7 @@ def course_edit_view(request, pk):
             'departments': departments,
             'professors': professors,
             'classrooms': classrooms,
-            'time_slots': Course.TIME_SLOTS, # اضافه کردن این خط
+            'time_slots': Course.TIME_SLOTS,
             'majors': majors
         })
     
@@ -429,24 +399,14 @@ def enroll_student_view(request):
                 student = Student.objects.get(pk=student_id)
                 courses = Course.objects.filter(pk__in=course_ids)
                 
-                # محاسبه مجموع واحدهای انتخابی
                 total_units = courses.aggregate(total=Sum('units'))['total'] or 0
                 current_units = StudentCourse.objects.filter(student=student).aggregate(total=Sum('course__units'))['total'] or 0
                 
-                # اعتبارسنجی حداکثر واحدها
                 if (current_units + total_units) > student.max_units:
                     messages.error(request, f'مجموع واحدها از حد مجاز ({student.max_units}) بیشتر میشود!')
                     return redirect('enroll_student')
                 
-                # اعتبارسنجی پیش‌نیازها
-                for course in courses:
-                    prerequisites = course.prerequisites.all()
-                    for prereq in prerequisites:
-                        if not StudentCourse.objects.filter(student=student, course=prereq, status='completed').exists():
-                            messages.error(request, f'درس {prereq.course_name} به عنوان پیش‌نیاز {course.course_name} گذرانده نشده است!')
-                            return redirect('enroll_student')
                 
-                # اعتبارسنجی همنیازها
                 for course in courses:
                     coreqs = course.corequisites.all()
                     for coreq in coreqs:
@@ -454,7 +414,6 @@ def enroll_student_view(request):
                             messages.error(request, f'درس {coreq.course_name} باید همزمان با {course.course_name} اخذ شود!')
                             return redirect('enroll_student')
                 
-                # ثبت نهایی دروس
                 for course in courses:
                     StudentCourse.objects.create(
                         student=student,
