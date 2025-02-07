@@ -279,22 +279,22 @@ class StudentCourse(models.Model):
                         f"You must enroll in {co_requisite.corequisite.course_name} as a co-requisite."
                     )
                 
-def save(self, *args, **kwargs):
-    is_new = self.pk is None 
-    if is_new and self.status == 'enrolled':
-        if self.course.remaining_capacity <= 0:
-            raise ValidationError('Course capacity full.')
-        self.course.remaining_capacity -= 1
-        self.course.save()
-    super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None 
+        if is_new and self.status == 'enrolled':
+            if self.course.remaining_capacity <= 0:
+                raise ValidationError('Course capacity full.')
+            self.course.remaining_capacity -= 1
+            self.course.save()
+        super().save(*args, **kwargs)
 
-def delete(self, *args, **kwargs):
-    if self.status == 'enrolled':
-        self.course.remaining_capacity += 1
-        self.course.save()
-    super().delete(*args, **kwargs)
-    def __str__(self):
-        return f"{self.student} ثبت نام شد در {self.course}"
+    def delete(self, *args, **kwargs):
+        if self.status == 'enrolled':
+            self.course.remaining_capacity += 1
+            self.course.save()
+        super().delete(*args, **kwargs)
+        def __str__(self):
+            return f"{self.student} ثبت نام شد در {self.course}"
 
 
 

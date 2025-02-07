@@ -127,7 +127,6 @@ def handle_finalize(request, student):
                 course=course,
                 status='enrolled'
             )
-            course.remaining_capacity -= 1
             course.save()
         
         request.session['selected_courses'] = []
