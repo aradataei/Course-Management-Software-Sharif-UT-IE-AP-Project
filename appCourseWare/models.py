@@ -222,7 +222,6 @@ class Course(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     professor = models.ForeignKey(Professor, on_delete=models.SET_NULL, null=True, blank=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True)
-    prerequisites = models.ManyToManyField('self', through='Prerequisite', symmetrical=False, related_name='required_for')
     corequisites = models.ManyToManyField('self', through='CoRequisite', symmetrical=False, related_name='corequired_for')
     units = models.PositiveIntegerField(default=3)
     major = models.ForeignKey(Major, related_name='majors', on_delete=models.SET_NULL, null=True, blank=True)
@@ -331,16 +330,6 @@ def delete(self, *args, **kwargs):
         return f"{self.student} ثبت نام شد در {self.course}"
 
 
-
-class Prerequisite(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='prerequisites_set')
-    required_course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='required_prerequisites')
-
-    class Meta:
-        unique_together = ('course', 'required_course')
-
-    def __str__(self):
-        return f"درس {self.required_course} پیش نیاز {self.course} است"
 
 
 

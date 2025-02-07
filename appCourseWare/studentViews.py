@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.contrib.auth.decorators import login_required
-from .models import Course, Department, Student, StudentCourse, Prerequisite
+from .models import Course, Department, Student, StudentCourse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError

@@ -8,7 +8,7 @@ from django.db.models import Sum
 from .models import (
     Course, Student, StudentCourse, Professor,
     Department, Classroom, CustomUser, UserLevel,
-    Major, Prerequisite, CoRequisite
+    Major, CoRequisite
 )
 
 # ------------------------ عمومی --------------------------
