@@ -270,7 +270,7 @@ def classroom_delete_view(request, pk):
 def course_list_view(request):
     courses = Course.objects.select_related(
         'department', 'professor', 'classroom'
-    ).prefetch_related('prerequisites', 'corequisites').all()
+    ).prefetch_related( 'corequisites').all()
     
     department_filter = request.GET.get('department')
     if department_filter:
@@ -406,12 +406,6 @@ def enroll_student_view(request):
                     messages.error(request, f'مجموع واحدها از حد مجاز ({student.max_units}) بیشتر میشود!')
                     return redirect('enroll_student')
                 
-                for course in courses:
-                    prerequisites = course.prerequisites.all()
-                    for prereq in prerequisites:
-                        if not StudentCourse.objects.filter(student=student, course=prereq, status='completed').exists():
-                            messages.error(request, f'درس {prereq.course_name} به عنوان پیش‌نیاز {course.course_name} گذرانده نشده است!')
-                            return redirect('enroll_student')
                 
                 for course in courses:
                     coreqs = course.corequisites.all()

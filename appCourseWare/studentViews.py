@@ -42,7 +42,7 @@ def home_view(request):
     ).aggregate(Sum('units'))['units__sum'] or 0
     
     context = {
-        'courses': courses.prefetch_related('prerequisites'),
+        'courses': courses.prefetch_related('corequisites'),
         'departments': Department.objects.all(),
         'current_units': current_units,
         'selected_units': selected_units,
@@ -83,22 +83,24 @@ def handle_add_course(request, course_id, student):
         messages.error(request, 'تعداد واحد مجاز превыشده')
         return redirect('home_view')
     
-    if course_id not in session['selected_courses']:
-        session['selected_courses'].append(course_id)
-        session.modified = True
-        messages.success(request, f'{course.course_name} به سبد اضافه شد')
-    
     current_units = StudentCourse.objects.filter(
         student=student, 
         status='enrolled'
     ).aggregate(Sum('course__units'))['course__units__sum'] or 0
-
     selected_units = sum_units(student, session['selected_courses'])
     total_units = current_units + selected_units + course.units
 
     if total_units > student.max_units:
         messages.error(request, 'تعداد واحد مجاز رد شده')
         return redirect('home_view')
+
+    if course_id not in session['selected_courses']:
+        session['selected_courses'].append(course_id)
+        session.modified = True
+        messages.success(request, f'{course.course_name} به سبد اضافه شد')
+    
+
+
     return redirect('home_view')
 
 def handle_remove_course(request, course_id):

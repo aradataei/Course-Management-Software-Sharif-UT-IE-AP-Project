@@ -131,7 +131,6 @@
                     {% for course in courses %}
                     <div class="col">
                         <div class="card course-card h-100 
-                            {% if not course.check_prerequisites %}prerequisite-warning{% endif %}
                             {% if course.remaining_capacity == 0 %}bg-danger text-white{% endif %}">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="card-title mb-0">{{ course.course_name }}</h5>
@@ -154,7 +153,7 @@
                                         <p class="mb-1"><strong>زمان کلاس:</strong> {{ course.class_time }}</p>
                                         <p class="mb-1"><strong>روزهای برگزاری:</strong> {{ course.class_date }}</p>
                                         <p class="mb-1"><strong>پیش‌نیازها:</strong>
-                                            {% for pre in course.prerequisites.all %}
+                                            {% for pre in course.corequisites.all %}
                                             <span class="badge bg-warning text-dark">{{ pre.course_name }}</span>
                                             {% empty %}
                                             <span class="text-muted">ندارد</span>
