@@ -75,7 +75,7 @@ def handle_add_course(request, course_id, student):
     session = request.session
     
     if has_time_conflict(student, course):
-        messages.error(request, f'تداخل زمانی با {course.course_name}')
+        messages.error(request, f'تداخل زمانی با دروس انتخابی')
         return redirect('home_view')
     
     new_units = sum_units(student, session['selected_courses']) + course.units
